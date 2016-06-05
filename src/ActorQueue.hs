@@ -1,0 +1,38 @@
+module ActorQueue where
+
+import qualified Data.Dequeue         as DQ
+
+import           Control.Lens
+import           Debug.Trace
+import           Debug.Trace.Helpers
+import           Prelude              hiding (Either (..), id, (.))
+import           Control.Applicative
+import           Control.Category
+
+
+
+import Entity
+
+type ActorQueue = DQ.BankersDequeue EntityRef
+
+rotate :: ActorQueue -> ActorQueue
+rotate queue = traceMsg "rotating queue to: " queueChoice where
+  potentialQ = do
+    (exiting, queue') <- DQ.popFront queue
+    return $ DQ.pushBack queue' exiting
+  queueChoice = case potentialQ of Nothing -> traceMsg "queue was empty?" queue
+                                   (Just q) -> q
+
+actionPointsOfEntity :: Maybe Entity -> Maybe Int
+actionPointsOfEntity eM = do
+  e <- eM
+  actor' <- e ^. actor
+  return $ actor' ^. actionPoints
+
+enoughActionPoints :: Maybe Int -> Bool
+enoughActionPoints p = case p of
+  Nothing -> False
+  Just p' -> p' > 0
+
+stillActive :: Maybe Entity -> Bool
+stillActive = (enoughActionPoints <<< actionPointsOfEntity)

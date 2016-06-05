@@ -18,6 +18,12 @@ library
   exposed-modules:     Game
                       , Coord
                       , Symbol
+                      , GameState
+                      , Entity
+                      , Actions
+                      , ActorQueue
+                      , Effects
+                      
   build-depends:        base >= 4.7 && < 5,
                       lens,
                       random,

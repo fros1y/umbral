@@ -1,7 +1,15 @@
 module Main where
 
+
+import           Prelude              hiding (Either (..), id, (.))
+import           Control.Applicative
+import           Control.Category
+
+
 import Game
 import Coord
+import Entity
+import GameState
 
 gameState = addEntitiesToGame
                 [ mkWall 2 (Coord 2 2),
