@@ -50,3 +50,16 @@ addEntitiesToGame ents gameState = Prelude.foldr addEntityToGame gameState ents
 
 instance Default GameState where
   def = mkGameState (Coord 0 0)
+
+
+unsafeFromJust :: Lens' (Maybe a) a
+unsafeFromJust = anon (error "unsafeFromJust: Nothing") (const False)
+
+player :: Lens' GameState Entity
+player = gameEntities . (at 1) . unsafeFromJust
+
+playerPosition :: Lens' GameState Coord
+playerPosition = player . position
+
+allEntities :: GameState -> [Entity]
+allEntities state = IntMap.elems (state ^. gameEntities)

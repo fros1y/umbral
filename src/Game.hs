@@ -31,6 +31,7 @@ import Entity
 import Actions
 import Effects
 import GameState
+import UI
 
 newtype GameM a = GameM {
   runGame :: (Reader.ReaderT GameState IO) a
@@ -39,26 +40,25 @@ newtype GameM a = GameM {
 traceMsgM :: (Monad m, Show r) => [Char] -> m r -> m r
 traceMsgM a = State.liftM $ traceMsg a
 
-gameLoop :: GameState -> IO ()
-gameLoop gameState = L.iterateM_ gameStep gameState
+gameLoop :: DisplayContext -> GameState -> IO ()
+gameLoop display gameState = L.iterateM_ gameStep gameState where
+  gameStep gameState = Reader.runReaderT (runGame (gameStepM display)) gameState
 
-gameStep :: GameState -> IO GameState
-gameStep gameState = Reader.runReaderT (runGame gameStepM) gameState
-
-gameStepM :: GameM GameState
-gameStepM = do
-  render
+gameStepM :: DisplayContext -> GameM GameState
+gameStepM display = do
+  state <- ask
+  liftIO $ render display state
   entityToRun <- firstInQueue
   if stillActive entityToRun
-    then entityStepM (fromJust entityToRun)
+    then entityStepM display (fromJust entityToRun)
     else rotateAndStep (fromJust entityToRun)
 
-entityStepM :: Entity -> GameM GameState
-entityStepM entityToRun = do
+entityStepM :: DisplayContext -> Entity -> GameM GameState
+entityStepM display entityToRun = do
   actions <- if isPlayerEntity entityToRun
-            then traceMsgM "getPlayerActions: " $ getPlayerActions entityToRun
-            else traceMsgM "runEntity: " $ runEntity entityToRun
-  effects <-    traceMsgM "applyActions: " $ applyActions actions
+            then getPlayerActions display entityToRun
+            else runEntity entityToRun
+  effects <- applyActions actions
   applyEffectsToEntities effects -- return mutated gameState
 
 rotateAndStep :: Entity -> GameM GameState
@@ -66,11 +66,6 @@ rotateAndStep exhaustedEntity = do
   let recover = returnEffectsForRef (exhaustedEntity ^. entityRef) [EffRecoverAP]
   gameState' <- applyEffectsToEntities recover
   return $ gameState' & actorQueue %~ rotate
-
-render :: GameM ()
-render = do
-  state <- ask
-  liftIO $ print state
 
 getEntity :: EntityRef -> GameM (Maybe Entity)
 getEntity ref = do
@@ -99,21 +94,12 @@ applyActions actionsByEntity@(ref, actions) = do
   return $ mconcat (cost:effects)
 
 ------
-
-directionFromInput :: Char -> Maybe Direction
-directionFromInput char = case char of
-    'h' -> Just Coord.Left
-    'l' -> Just Coord.Right
-    'j' -> Just Coord.Down
-    'k' -> Just Coord.Up
-    _ -> Nothing
-
-getPlayerActions :: Entity -> GameM ActionsByEntity
-getPlayerActions player = do
-  input <- Reader.liftIO getChar
-  let dir = directionFromInput input
-      act = case dir of Nothing -> []
-                        (Just d) -> [ActMoveBy $ fromDirection d]
+getPlayerActions :: DisplayContext -> Entity -> GameM ActionsByEntity
+getPlayerActions display player = do
+  command <- liftIO $ getPlayerCommand display
+  let act = case command of Nothing -> []
+                            Just (Go d) -> [ActMoveBy $ fromDirection d]
+                            _ -> trace "Unknown action" []
   return $ returnActionsFor player act
 
 -----

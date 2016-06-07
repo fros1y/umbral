@@ -23,7 +23,9 @@ library
                       , Actions
                       , ActorQueue
                       , Effects
-                      
+                      , UI
+
+
   build-depends:        base >= 4.7 && < 5,
                       lens,
                       random,
@@ -36,7 +38,8 @@ library
                       colour,
                       dequeue,
                       DebugTraceHelpers,
-                      monad-loops
+                      monad-loops,
+                      SFML
   default-language:    Haskell2010
 
 executable umbral-exe

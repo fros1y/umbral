@@ -10,6 +10,7 @@ import Game
 import Coord
 import Entity
 import GameState
+import UI
 
 gameState = addEntitiesToGame
                 [ mkWall 2 (Coord 2 2),
@@ -18,4 +19,7 @@ gameState = addEntitiesToGame
             $ mkGameState (Coord 0 0)
 
 main :: IO ()
-main =  gameLoop gameState
+main = do
+  display <- initDisplay
+  gameLoop display gameState
+  endDisplay display
