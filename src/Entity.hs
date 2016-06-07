@@ -40,6 +40,15 @@ data Actor = Actor {
 } deriving (Show, Generic)
 makeLenses ''Actor
 
+data Obstruction = Obstruction {
+  _traversable :: Bool,
+  _transparent :: Bool
+} deriving (Show, Generic)
+makeLenses ''Obstruction
+
+instance Default Obstruction where
+  def = Obstruction {_traversable = False, _transparent = False}
+
 mkActor :: Strategy -> Actor
 mkActor strat = Actor {_strategy = strat, _actionPoints = 100, _speed = 100}
 
@@ -48,7 +57,8 @@ data Entity = Entity {
   _position  :: Coord,
   _symbol    :: Symbol,
   _health    :: Maybe Health,
-  _actor     :: Maybe Actor
+  _actor     :: Maybe Actor,
+  _obstruction :: Maybe Obstruction
 } deriving (Show, Generic)
 makeLenses ''Entity
 
@@ -63,7 +73,8 @@ mkBaseEntity ref coord sym = Entity {   _entityRef = ref,
                                         _position = coord,
                                         _symbol = sym,
                                         _health = Nothing,
-                                        _actor = Nothing
+                                        _actor = Nothing,
+                                        _obstruction = def
                                     }
 
 mkPlayer :: EntityRef -> Coord -> Entity

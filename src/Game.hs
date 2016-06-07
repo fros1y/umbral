@@ -117,7 +117,29 @@ runEntity entity = do
 -------
 
 validateActions :: ActionsByEntity -> GameM [Action]
-validateActions (ref, actions) = return actions
+validateActions (ref, actions) = do
+  e <- getEntity ref
+  case e of
+    Nothing -> return [] -- a non-existent entity can do nothing
+    (Just e') -> filterM (validActionBy e') actions
+
+validActionBy :: Entity -> Action -> GameM Bool
+validActionBy e (ActMoveBy delta) = traversableAt $ (e ^. position) + delta
+validActionBy _ _ = return True
+
+traversableAt :: Coord -> GameM Bool
+traversableAt coord = do
+  state <- ask
+  return $ not (any isTraversable . entitiesAt coord $ allEntities state)
+
+entitiesAt :: Coord -> [Entity] -> [Entity]
+entitiesAt coord entities = filter (entityAt coord) entities where
+  entityAt :: Coord -> Entity -> Bool
+  entityAt coord e = (coord == e ^. position)
+
+isTraversable :: Entity -> Bool
+isTraversable e = maybe True checkTraversable (e ^. obstruction) where
+  checkTraversable ob = ob ^. traversable
 
 -------
 
