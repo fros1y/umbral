@@ -68,6 +68,18 @@ isPlayerEntity e = case e ^. actor of
   Nothing -> False
   Just a -> (a ^. strategy) == Player
 
+entitiesAt :: Coord -> [Entity] -> [Entity]
+entitiesAt coord entities = filter (entityAt coord) entities where
+  entityAt :: Coord -> Entity -> Bool
+  entityAt coord e = (coord == e ^. position)
+
+isTraversable :: Entity -> Bool
+isTraversable e = maybe True checkTraversable (e ^. obstruction) where
+  checkTraversable ob = ob ^. traversable
+
+
+
+
 mkBaseEntity :: EntityRef -> Coord -> Symbol -> Entity
 mkBaseEntity ref coord sym = Entity {   _entityRef = ref,
                                         _position = coord,

@@ -132,15 +132,6 @@ traversableAt coord = do
   state <- ask
   return $ not (any isTraversable . entitiesAt coord $ allEntities state)
 
-entitiesAt :: Coord -> [Entity] -> [Entity]
-entitiesAt coord entities = filter (entityAt coord) entities where
-  entityAt :: Coord -> Entity -> Bool
-  entityAt coord e = (coord == e ^. position)
-
-isTraversable :: Entity -> Bool
-isTraversable e = maybe True checkTraversable (e ^. obstruction) where
-  checkTraversable ob = ob ^. traversable
-
 -------
 
 applyAction :: EntityRef -> Action -> GameM EffectsToEntities
