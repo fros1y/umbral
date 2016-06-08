@@ -72,6 +72,11 @@ within (Coord cx cy) (Bounds (Coord lx ly) (Coord ux uy)) = withinX && withinY w
   withinX = between cx lx ux
   withinY = between cy ly uy
 
+coordSgn :: Coord -> Coord
+coordSgn (Coord x y) = Coord sx sy where
+  sx = signum x
+  sy = signum y
+
 randomWithin :: Random.MonadRandom m => Bounds -> m Coord
 randomWithin b = Random.uniform (coordsWithin b)
 

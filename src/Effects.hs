@@ -20,6 +20,7 @@ data Effect = EffMoveTo Coord
             | EffRecoverAP
             | EffSpendAP Int
             | EffDestroy
+            | EffPass
             deriving (Show, Generic, Eq)
 
 --type EffectsToEntities = IntMap.IntMap [Effect]
@@ -38,17 +39,17 @@ returnEffectsFor entity effects = EffectsToEntities $ IntMap.singleton (entity ^
 returnEffectsForRef :: EntityRef -> [Effect] -> EffectsToEntities
 returnEffectsForRef entityref effects = EffectsToEntities $ IntMap.singleton entityref effects
 
-returnEffectsForAll :: [Effect] -> EffectsToEntities
-returnEffectsForAll effects = EffectsToEntities $ IntMap.singleton (-1) effects
+-- returnEffectsForAll :: [Effect] -> EffectsToEntities
+-- returnEffectsForAll effects = EffectsToEntities $ IntMap.singleton (-1) effects
 
 applyEffects :: EntityRef -> [Effect] -> Entity -> Maybe Entity
 applyEffects _ effects e = foldr applyEffect (Just e) effects
 
-applyBroadcastEffects :: Maybe [Effect] -> IntMap.IntMap Entity -> IntMap.IntMap Entity
-applyBroadcastEffects Nothing ents = ents
-applyBroadcastEffects (Just effs) ents = IntMap.mapMaybeWithKey apply' ents where
-  apply' :: EntityRef -> Entity -> Maybe Entity
-  apply' ref ent = applyEffects ref effs ent
+-- applyBroadcastEffects :: Maybe [Effect] -> IntMap.IntMap Entity -> IntMap.IntMap Entity
+-- applyBroadcastEffects Nothing ents = ents
+-- applyBroadcastEffects (Just effs) ents = IntMap.mapMaybeWithKey apply' ents where
+--   apply' :: EntityRef -> Entity -> Maybe Entity
+--   apply' ref ent = applyEffects ref effs ent
 
 applyEffect :: Effect -> Maybe Entity -> Maybe Entity
 applyEffect EffDestroy          e = traceMsg "EffDestroy: " Nothing
@@ -56,8 +57,13 @@ applyEffect EffRecoverAP        e = traceMsg "EffRecoverAP: " $ pure recoverAP <
 applyEffect (EffSpendAP ap)     e = traceMsg "EffSpendAP: " $ spendAP <$> e <*> pure ap
 applyEffect (EffDamaged dmg)    e = traceMsg "EffDamaged: " $ applyDamage <$> e <*> pure dmg
 applyEffect (EffMoveTo pos)     e = traceMsg "EffMoveTo: " $ moveTo <$> e <*> pure pos
+applyEffect EffPass             e = traceMsg "EffPass: " $ pure spendAllAP <*> e
 -- applyEffect _                   e = traceMsg "UNHANDLED EFF" $ e
 
+
+spendAllAP :: Entity -> Entity
+spendAllAP e = e & actor %~ (liftA spendAllAP') where
+  spendAllAP' act = act & actionPoints .~ 0
 
 spendAP :: Entity -> Int -> Entity
 spendAP e apC = e & actor %~ (liftA spendAP') where

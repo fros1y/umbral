@@ -62,6 +62,10 @@ data Entity = Entity {
 } deriving (Show, Generic)
 makeLenses ''Entity
 
+entityStrategy :: Entity -> Maybe Strategy
+entityStrategy e = getStrategy <$> getActor e where
+  getActor e = e ^. actor
+  getStrategy a = a ^. strategy
 
 isPlayerEntity :: Entity -> Bool
 isPlayerEntity e = case e ^. actor of
@@ -102,6 +106,13 @@ mkRandomRat ref coord = baseEntity  & health .~ Just (mkHealth 1)
                     where
                       baseEntity = mkBaseEntity ref coord sym
                       sym = def & glyph .~ 'r'
+
+mkZombie :: EntityRef -> Coord -> Entity
+mkZombie ref coord = baseEntity & health .~ Just (mkHealth 1)
+                                & actor .~ Just (mkActor Zombie)
+                    where
+                      baseEntity = mkBaseEntity ref coord sym
+                      sym = def & glyph .~ 'Z'
 
 mkWall :: EntityRef -> Coord -> Entity
 mkWall ref coord = baseEntity where

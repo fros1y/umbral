@@ -57,7 +57,7 @@ entityStepM :: DisplayContext -> Entity -> GameM GameState
 entityStepM display entityToRun = do
   actions <- if isPlayerEntity entityToRun
             then getPlayerActions display entityToRun
-            else runEntity entityToRun
+            else traceMsgM ("entity acting: " ++ show (entityToRun ^. entityRef)) $ runEntity entityToRun
   effects <- applyActions actions
   applyEffectsToEntities effects -- return mutated gameState
 
@@ -87,6 +87,7 @@ getEntityToRun = do
     else return Nothing
 
 applyActions :: ActionsByEntity -> GameM EffectsToEntities
+applyActions (_, []) = return mempty
 applyActions actionsByEntity@(ref, actions) = do
   validActions <- validateActions actionsByEntity
   effects <- mapM (applyAction ref) validActions
@@ -107,12 +108,27 @@ getPlayerActions display player = do
 getRandomDirection :: (Random.MonadRandom m) => m Direction
 getRandomDirection = Random.uniform [Coord.Left, Coord.Right, Coord.Down, Coord.Up]
 
+getDeltaTowardsPlayer :: Entity -> GameM Coord
+getDeltaTowardsPlayer entity = do
+  state <- ask
+  let playerPos = state ^. playerPosition
+      entityPos = entity ^. position
+  return $ coordSgn (playerPos - entityPos)
+
 ------
 
 runEntity :: Entity -> GameM ActionsByEntity
-runEntity entity = do
-  randomDirection <- getRandomDirection
-  return $ returnActionsFor entity [ActMoveBy $ fromDirection randomDirection]
+runEntity entity = case entityStrategy entity of
+  Nothing -> return $ returnActionsFor entity []
+  Just Random -> do
+    randomDirection <- getRandomDirection
+    return $ returnActionsFor entity [ActMoveBy $ fromDirection randomDirection]
+  Just Zombie -> do
+    towardsPlayer <- getDeltaTowardsPlayer entity
+    possibleMove <- traversableAt $ (entity ^. position) + towardsPlayer
+    return $ returnActionsFor entity (if possibleMove
+                                      then [ActMoveBy towardsPlayer]
+                                      else [ActWait])
 
 -------
 
@@ -132,10 +148,12 @@ traversableAt coord = do
   state <- ask
   return $ not (any isTraversable . entitiesAt coord $ allEntities state)
 
+
 -------
 
 applyAction :: EntityRef -> Action -> GameM EffectsToEntities
-applyAction ref ActPlayerTurnDone   = return $ returnEffectsForAll [EffRecoverAP]
+-- applyAction ref ActPlayerTurnDone   = return $ returnEffectsForAll [EffRecoverAP]
+applyAction ref ActWait             = return $ returnEffectsForRef ref [EffPass]
 applyAction ref (ActMoveBy delta)   = do
   e <- fromJust <$> getEntity ref
   return (returnEffectsForRef ref [EffMoveTo $ (e ^. position) + delta])
@@ -147,7 +165,6 @@ applyEffectsToEntities :: EffectsToEntities -> GameM GameState
 applyEffectsToEntities effects = do
   gameState <- ask
   let gameEntities' = IntMap.mergeWithKey applyEffects (const IntMap.empty) id (getMap effects) (gameState ^. gameEntities)
-      gameEntities'' = applyBroadcastEffects (IntMap.lookup (-1) (getMap effects)) gameEntities'
       gameState'    = gameState
-                    & gameEntities .~ gameEntities''
+                    & gameEntities .~ gameEntities'
   return $ gameState'
