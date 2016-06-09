@@ -26,6 +26,7 @@ library
                       , UI
                       , GameM
                       , AIStrategies
+                      , Serialize
 
 
   build-depends:        base >= 4.7 && < 5,
@@ -42,6 +43,7 @@ library
                       DebugTraceHelpers,
                       monad-loops,
                       SFML,
+                      aeson,
                       random-shuffle
   default-language:    Haskell2010
 

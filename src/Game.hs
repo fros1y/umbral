@@ -25,6 +25,7 @@ import           Debug.Trace.Helpers
 import           GHC.Generics
 import           Prelude              hiding (Either (..), id, (.))
 import           Symbol
+import qualified Data.Aeson as Aeson
 
 import ActorQueue
 import Entity
@@ -35,16 +36,38 @@ import UI
 import GameM
 import Utils
 import AIStrategies
+import Serialize
+
 
 data GameCommand =  C_Quit |
                     C_Save |
                     C_Load deriving (Eq, Generic, Show)
+
+
+saveGame :: GameState -> IO ()
+saveGame state = do
+  let filename = "out.umbral"
+  writeFile filename <<< show $ Aeson.encode state
+
+loadGame :: IO (Maybe GameState)
+loadGame = do
+  let filename = "out.umbral"
+  fileContents <- readFile filename
+  return $ Aeson.decode (read fileContents)
 
 gameLoop :: DisplayContext -> GameState -> IO ()
 gameLoop display gameState = do
   (state', gameCommand) <- Reader.runReaderT (runGame (gameStepM display)) gameState
   case gameCommand of
     Nothing -> gameLoop display state'
+    Just C_Save -> do
+      saveGame state'
+      gameLoop display state'
+    Just C_Load -> do
+      loadState <- loadGame
+      case loadState of
+        Nothing -> traceMsgM "Error loading game." $ gameLoop display state'
+        (Just loadState') -> gameLoop display loadState'
     Just C_Quit -> return ()
 
 gameStepM :: DisplayContext -> GameM (GameState, Maybe GameCommand)
@@ -89,5 +112,7 @@ getPlayerActions display player = do
                             Nothing -> ([], Nothing)
                             Just (Go d) -> ([ActMoveBy $ fromDirection d], Nothing)
                             Just Quit -> ([], Just C_Quit)
+                            Just Save -> ([], Just C_Save)
+                            Just Load -> ([], Just C_Load)
                             _ -> ([], Nothing)
   return $ (returnActionsFor player act, command)
