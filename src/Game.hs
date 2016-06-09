@@ -125,24 +125,30 @@ splitCoordDelta (Coord x y) = [(Coord xs ys) |  xs <- [x, 0],
                                                 ys <- [y, 0]]
 ------
 
+runRandom :: Entity -> GameM ActionsByEntity
+runRandom entity = do
+  possibleMoves <- randomDeltas
+  validMoves <- filterM (entityCanMoveBy entity) possibleMoves
+  let validMove = listToMaybe validMoves
+  return $ returnActionsFor entity (case validMove of
+                                      Nothing -> [ActWait]
+                                      (Just m) -> [ActMoveBy m])
+
+runZombie :: Entity -> GameM ActionsByEntity
+runZombie entity = do
+  towardsPlayer <- getDeltaTowardsPlayer entity
+  let possibleMoves = splitCoordDelta towardsPlayer
+  validMoves <- filterM (entityCanMoveBy entity) possibleMoves
+  let validMove = listToMaybe validMoves
+  return $ returnActionsFor entity (case validMove of
+                                      Nothing -> [ActWait]
+                                      (Just m) -> [ActMoveBy m])
+
 runEntity :: Entity -> GameM ActionsByEntity
 runEntity entity = case entityStrategy entity of
   Nothing -> return $ returnActionsFor entity []
-  Just Random -> do
-    possibleMoves <- randomDeltas
-    validMoves <- filterM (entityCanMoveBy entity) possibleMoves
-    let validMove = listToMaybe validMoves
-    return $ returnActionsFor entity (case validMove of
-                                        Nothing -> [ActWait]
-                                        (Just m) -> [ActMoveBy m])
-  Just Zombie -> do
-    towardsPlayer <- getDeltaTowardsPlayer entity
-    let possibleMoves = splitCoordDelta towardsPlayer
-    validMoves <- filterM (entityCanMoveBy entity) possibleMoves
-    let validMove = listToMaybe validMoves
-    return $ returnActionsFor entity (case validMove of
-                                        Nothing -> [ActWait]
-                                        (Just m) -> [ActMoveBy m])
+  Just Random -> runRandom entity
+  Just Zombie -> runZombie entity
 -------
 
 validateActions :: ActionsByEntity -> GameM [Action]
