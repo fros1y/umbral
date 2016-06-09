@@ -15,6 +15,7 @@ import           Data.Default
 import           Control.Lens
 import           Data.Map.Strict      as Map
 import           Data.IntMap.Strict      as IntMap
+import qualified System.Random.Shuffle as Random
 
 data Coord = Coord {
   _x :: Integer,
@@ -101,3 +102,14 @@ insetBounds i (Bounds l u) = (Bounds l' u') where
   offset = (Coord i i)
   l' = l + offset
   u' = u - offset
+
+splitCoordDelta :: Coord -> [Coord]
+splitCoordDelta (Coord x y) = [(Coord xs ys) |  xs <- [x, 0],
+                                                ys <- [y, 0]]
+
+getRandomDirection :: (Random.MonadRandom m) => m Direction
+getRandomDirection = Random.uniform [Coord.Left, Coord.Right, Coord.Down, Coord.Up]
+
+randomDeltas :: (Random.MonadRandom m) => m [Coord]
+randomDeltas = Random.shuffleM [(Coord xs ys) | xs <- [-1, 0, 1],
+                                               ys <- [-1, 0, 1]]

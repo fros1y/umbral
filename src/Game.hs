@@ -12,7 +12,6 @@ import           Control.Lens
 import           Control.Monad        (when)
 import qualified Control.Monad.Loops  as L
 import qualified Control.Monad.Random as Random
-import qualified System.Random.Shuffle as Random
 import           Control.Monad.Reader as Reader
 import qualified Control.Monad.State  as State
 import           Coord
@@ -33,13 +32,13 @@ import Actions
 import Effects
 import GameState
 import UI
+import GameM
+import Utils
+import AIStrategies
 
-newtype GameM a = GameM {
-  runGame :: (Reader.ReaderT GameState IO) a
-} deriving (Functor, Applicative, Random.MonadRandom, Monad, MonadReader GameState, State.MonadIO)
-
-traceMsgM :: (Monad m, Show r) => [Char] -> m r -> m r
-traceMsgM a = State.liftM $ traceMsg a
+data GameCommand =  C_Quit |
+                    C_Save |
+                    C_Load deriving (Eq, Generic, Show)
 
 gameLoop :: DisplayContext -> GameState -> IO ()
 gameLoop display gameState = do
@@ -47,10 +46,6 @@ gameLoop display gameState = do
   case gameCommand of
     Nothing -> gameLoop display state'
     Just C_Quit -> return ()
-
-data GameCommand =  C_Quit |
-                    C_Save |
-                    C_Load deriving (Eq, Generic, Show)
 
 gameStepM :: DisplayContext -> GameM (GameState, Maybe GameCommand)
 gameStepM display = do
@@ -74,16 +69,17 @@ entityStepM display entityToRun = do
   state' <- applyEffectsToEntities effects -- return mutated gameState
   return (state', command)
 
+runEntity :: Entity -> GameM ActionsByEntity
+runEntity entity = case entityStrategy entity of
+  Nothing -> return $ returnActionsFor entity []
+  Just Random -> runRandom entity
+  Just Zombie -> runZombie entity
+
 rotateAndStep :: Entity -> GameM GameState
 rotateAndStep exhaustedEntity = do
   let recover = returnEffectsForRef (exhaustedEntity ^. entityRef) [EffRecoverAP]
   gameState' <- applyEffectsToEntities recover
   return $ gameState' & actorQueue %~ rotate
-
-getEntity :: EntityRef -> GameM (Maybe Entity)
-getEntity ref = do
-  state <- ask
-  return $ IntMap.lookup ref (state ^. gameEntities)
 
 firstInQueue :: GameM (Maybe Entity)
 firstInQueue = do
@@ -91,21 +87,6 @@ firstInQueue = do
   let ref = (DQ.first (state ^. actorQueue)) :: Maybe EntityRef
   case ref of Nothing -> return Nothing
               Just r -> getEntity r
-
-getEntityToRun :: GameM (Maybe Entity)
-getEntityToRun = do
-  candidate <- firstInQueue
-  if stillActive candidate
-    then return candidate
-    else return Nothing
-
-applyActions :: ActionsByEntity -> GameM EffectsToEntities
-applyActions (_, []) = return mempty
-applyActions actionsByEntity@(ref, actions) = do
-  validActions <- validateActions actionsByEntity
-  effects <- mapM (applyAction ref) validActions
-  let cost = returnEffectsForRef ref [EffSpendAP $ (sum <<< (fmap determineActionCost)) validActions]
-  return $ mconcat (cost:effects)
 
 ------
 getPlayerActions :: DisplayContext -> Entity -> GameM (ActionsByEntity, Maybe GameCommand)
@@ -117,88 +98,3 @@ getPlayerActions display player = do
                             Just Quit -> ([], Just C_Quit)
                             _ -> ([], Nothing)
   return $ (returnActionsFor player act, command)
-
------
-
-getRandomDirection :: (Random.MonadRandom m) => m Direction
-getRandomDirection = Random.uniform [Coord.Left, Coord.Right, Coord.Down, Coord.Up]
-
-randomDeltas :: (Random.MonadRandom m) => m [Coord]
-randomDeltas = Random.shuffleM [(Coord xs ys) | xs <- [-1, 0, 1],
-                                               ys <- [-1, 0, 1]]
-
-getDeltaTowardsPlayer :: Entity -> GameM Coord
-getDeltaTowardsPlayer entity = do
-  state <- ask
-  let playerPos = state ^. playerPosition
-      entityPos = entity ^. position
-  return $ coordSgn (playerPos - entityPos)
-
-splitCoordDelta :: Coord -> [Coord]
-splitCoordDelta (Coord x y) = [(Coord xs ys) |  xs <- [x, 0],
-                                                ys <- [y, 0]]
-------
-
-runRandom :: Entity -> GameM ActionsByEntity
-runRandom entity = do
-  possibleMoves <- randomDeltas
-  validMoves <- filterM (entityCanMoveBy entity) possibleMoves
-  let validMove = listToMaybe validMoves
-  return $ returnActionsFor entity (case validMove of
-                                      Nothing -> [ActWait]
-                                      (Just m) -> [ActMoveBy m])
-
-runZombie :: Entity -> GameM ActionsByEntity
-runZombie entity = do
-  towardsPlayer <- getDeltaTowardsPlayer entity
-  let possibleMoves = splitCoordDelta towardsPlayer
-  validMoves <- filterM (entityCanMoveBy entity) possibleMoves
-  let validMove = listToMaybe validMoves
-  return $ returnActionsFor entity (case validMove of
-                                      Nothing -> [ActWait]
-                                      (Just m) -> [ActMoveBy m])
-
-runEntity :: Entity -> GameM ActionsByEntity
-runEntity entity = case entityStrategy entity of
-  Nothing -> return $ returnActionsFor entity []
-  Just Random -> runRandom entity
-  Just Zombie -> runZombie entity
--------
-
-validateActions :: ActionsByEntity -> GameM [Action]
-validateActions (ref, actions) = do
-  e <- getEntity ref
-  case e of
-    Nothing -> return [] -- a non-existent entity can do nothing
-    (Just e') -> filterM (validActionBy e') actions
-
-validActionBy :: Entity -> Action -> GameM Bool
-validActionBy e (ActMoveBy delta) = traversableAt $ (e ^. position) + delta
-validActionBy _ _ = return True
-
-traversableAt :: Coord -> GameM Bool
-traversableAt coord = do
-  state <- ask
-  return $ not (any isTraversable . entitiesAt coord $ allEntities state)
-
-entityCanMoveBy :: Entity -> Coord -> GameM Bool
-entityCanMoveBy e c = traversableAt (c + e ^. position)
--------
-
-applyAction :: EntityRef -> Action -> GameM EffectsToEntities
--- applyAction ref ActPlayerTurnDone   = return $ returnEffectsForAll [EffRecoverAP]
-applyAction ref ActWait             = return $ returnEffectsForRef ref [EffPass]
-applyAction ref (ActMoveBy delta)   = do
-  e <- fromJust <$> getEntity ref
-  return (returnEffectsForRef ref [EffMoveTo $ (e ^. position) + delta])
-applyAction ref _                   = return mempty
-
--------
-
-applyEffectsToEntities :: EffectsToEntities -> GameM GameState
-applyEffectsToEntities effects = do
-  gameState <- ask
-  let gameEntities' = IntMap.mergeWithKey applyEffects (const IntMap.empty) id (getMap effects) (gameState ^. gameEntities)
-      gameState'    = gameState
-                    & gameEntities .~ gameEntities'
-  return $ gameState'

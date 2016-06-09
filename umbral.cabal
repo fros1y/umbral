@@ -24,6 +24,8 @@ library
                       , ActorQueue
                       , Effects
                       , UI
+                      , GameM
+                      , AIStrategies
 
 
   build-depends:        base >= 4.7 && < 5,

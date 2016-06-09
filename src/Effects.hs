@@ -9,11 +9,14 @@ import           Control.Applicative
 import           Control.Category
 import           GHC.Generics
 import           Control.Lens
+import           Control.Monad.Reader as Reader
 
 import qualified Data.IntMap.Strict   as IntMap
 
 import Coord
 import Entity
+import GameM
+import GameState
 
 data Effect = EffMoveTo Coord
             | EffDamaged Int
@@ -23,7 +26,6 @@ data Effect = EffMoveTo Coord
             | EffPass
             deriving (Show, Generic, Eq)
 
---type EffectsToEntities = IntMap.IntMap [Effect]
 newtype EffectsToEntities = EffectsToEntities {
   getMap :: IntMap.IntMap [Effect]
 } deriving (Show)
@@ -39,17 +41,18 @@ returnEffectsFor entity effects = EffectsToEntities $ IntMap.singleton (entity ^
 returnEffectsForRef :: EntityRef -> [Effect] -> EffectsToEntities
 returnEffectsForRef entityref effects = EffectsToEntities $ IntMap.singleton entityref effects
 
--- returnEffectsForAll :: [Effect] -> EffectsToEntities
--- returnEffectsForAll effects = EffectsToEntities $ IntMap.singleton (-1) effects
+-----
+
+applyEffectsToEntities :: EffectsToEntities -> GameM GameState
+applyEffectsToEntities effects = do
+  gameState <- ask
+  let gameEntities' = IntMap.mergeWithKey applyEffects (const IntMap.empty) id (getMap effects) (gameState ^. gameEntities)
+      gameState'    = gameState
+                    & gameEntities .~ gameEntities'
+  return $ gameState'
 
 applyEffects :: EntityRef -> [Effect] -> Entity -> Maybe Entity
 applyEffects _ effects e = foldr applyEffect (Just e) effects
-
--- applyBroadcastEffects :: Maybe [Effect] -> IntMap.IntMap Entity -> IntMap.IntMap Entity
--- applyBroadcastEffects Nothing ents = ents
--- applyBroadcastEffects (Just effs) ents = IntMap.mapMaybeWithKey apply' ents where
---   apply' :: EntityRef -> Entity -> Maybe Entity
---   apply' ref ent = applyEffects ref effs ent
 
 applyEffect :: Effect -> Maybe Entity -> Maybe Entity
 applyEffect EffDestroy          e = traceMsg "EffDestroy: " Nothing
@@ -60,6 +63,7 @@ applyEffect (EffMoveTo pos)     e = traceMsg "EffMoveTo: " $ moveTo <$> e <*> pu
 applyEffect EffPass             e = traceMsg "EffPass: " $ pure spendAllAP <*> e
 -- applyEffect _                   e = traceMsg "UNHANDLED EFF" $ e
 
+--------
 
 spendAllAP :: Entity -> Entity
 spendAllAP e = e & actor %~ (liftA spendAllAP') where
