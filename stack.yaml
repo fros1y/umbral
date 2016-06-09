@@ -6,4 +6,4 @@ extra-deps:
 - DebugTraceHelpers-0.12
 - SFML-2.3.2.2
 - dequeue-0.1.12
-resolver: lts-6.1
+resolver: lts-6.2
