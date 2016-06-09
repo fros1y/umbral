@@ -69,12 +69,6 @@ entityStepM display entityToRun = do
   state' <- applyEffectsToEntities effects -- return mutated gameState
   return (state', command)
 
-runEntity :: Entity -> GameM ActionsByEntity
-runEntity entity = case entityStrategy entity of
-  Nothing -> return $ returnActionsFor entity []
-  Just Random -> runRandom entity
-  Just Zombie -> runZombie entity
-
 rotateAndStep :: Entity -> GameM GameState
 rotateAndStep exhaustedEntity = do
   let recover = returnEffectsForRef (exhaustedEntity ^. entityRef) [EffRecoverAP]
@@ -88,7 +82,6 @@ firstInQueue = do
   case ref of Nothing -> return Nothing
               Just r -> getEntity r
 
-------
 getPlayerActions :: DisplayContext -> Entity -> GameM (ActionsByEntity, Maybe GameCommand)
 getPlayerActions display player = do
   input <- liftIO $ getPlayerCommand display

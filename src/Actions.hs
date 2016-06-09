@@ -10,7 +10,6 @@ import           GHC.Generics
 import           Control.Lens
 import           Data.Maybe           (fromJust, isJust, isNothing, listToMaybe)
 import           Control.Monad.Reader as Reader
-
 import Coord
 import Entity
 import Effects
@@ -41,10 +40,6 @@ validateActions (ref, actions) = do
     Nothing -> return [] -- a non-existent entity can do nothing
     (Just e') -> filterM (validActionBy e') actions
 
-validActionBy :: Entity -> Action -> GameM Bool
-validActionBy e (ActMoveBy delta) = traversableAt $ (e ^. position) + delta
-validActionBy _ _ = return True
-
 applyActions :: ActionsByEntity -> GameM EffectsToEntities
 applyActions (_, []) = return mempty
 applyActions actionsByEntity@(ref, actions) = do
@@ -52,6 +47,11 @@ applyActions actionsByEntity@(ref, actions) = do
   effects <- mapM (applyAction ref) validActions
   let cost = returnEffectsForRef ref [EffSpendAP $ (sum <<< (fmap determineActionCost)) validActions]
   return $ mconcat (cost:effects)
+-----
+
+validActionBy :: Entity -> Action -> GameM Bool
+validActionBy e (ActMoveBy delta) = traversableAt $ (e ^. position) + delta
+validActionBy _ _ = return True
 
 applyAction :: EntityRef -> Action -> GameM EffectsToEntities
 applyAction ref ActWait             = return $ returnEffectsForRef ref [EffPass]

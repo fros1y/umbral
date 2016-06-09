@@ -30,6 +30,13 @@ import UI
 import GameM
 import Utils
 
+runEntity :: Entity -> GameM ActionsByEntity
+runEntity entity = case entityStrategy entity of
+  Nothing -> return $ returnActionsFor entity []
+  Just Random -> runRandom entity
+  Just Zombie -> runZombie entity
+
+
 runRandom :: Entity -> GameM ActionsByEntity
 runRandom entity = do
   possibleMoves <- randomDeltas
