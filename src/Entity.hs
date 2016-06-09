@@ -109,7 +109,7 @@ mkRandomRat ref coord = baseEntity  & health .~ Just (mkHealth 1)
 
 mkZombie :: EntityRef -> Coord -> Entity
 mkZombie ref coord = baseEntity & health .~ Just (mkHealth 1)
-                                & actor .~ Just (mkActor Zombie)
+                                & actor .~ Just (( mkActor Zombie) & speed .~ 50)
                     where
                       baseEntity = mkBaseEntity ref coord sym
                       sym = def & glyph .~ 'Z'
