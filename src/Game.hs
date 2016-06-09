@@ -12,6 +12,7 @@ import           Control.Lens
 import           Control.Monad        (when)
 import qualified Control.Monad.Loops  as L
 import qualified Control.Monad.Random as Random
+import qualified System.Random.Shuffle as Random
 import           Control.Monad.Reader as Reader
 import qualified Control.Monad.State  as State
 import           Coord
@@ -19,7 +20,7 @@ import           Data.Default
 import qualified Data.Dequeue         as DQ
 import qualified Data.IntMap.Strict   as IntMap
 import qualified Data.Map.Strict      as Map
-import           Data.Maybe           (fromJust, isJust, isNothing)
+import           Data.Maybe           (fromJust, isJust, isNothing, listToMaybe)
 import           Debug.Trace
 import           Debug.Trace.Helpers
 import           GHC.Generics
@@ -108,6 +109,10 @@ getPlayerActions display player = do
 getRandomDirection :: (Random.MonadRandom m) => m Direction
 getRandomDirection = Random.uniform [Coord.Left, Coord.Right, Coord.Down, Coord.Up]
 
+randomDeltas :: (Random.MonadRandom m) => m [Coord]
+randomDeltas = Random.shuffleM [(Coord xs ys) | xs <- [-1, 0, 1],
+                                               ys <- [-1, 0, 1]]
+
 getDeltaTowardsPlayer :: Entity -> GameM Coord
 getDeltaTowardsPlayer entity = do
   state <- ask
@@ -115,21 +120,29 @@ getDeltaTowardsPlayer entity = do
       entityPos = entity ^. position
   return $ coordSgn (playerPos - entityPos)
 
+splitCoordDelta :: Coord -> [Coord]
+splitCoordDelta (Coord x y) = [(Coord xs ys) |  xs <- [x, 0],
+                                                ys <- [y, 0]]
 ------
 
 runEntity :: Entity -> GameM ActionsByEntity
 runEntity entity = case entityStrategy entity of
   Nothing -> return $ returnActionsFor entity []
   Just Random -> do
-    randomDirection <- getRandomDirection
-    return $ returnActionsFor entity [ActMoveBy $ fromDirection randomDirection]
+    possibleMoves <- randomDeltas
+    validMoves <- filterM (entityCanMoveBy entity) possibleMoves
+    let validMove = listToMaybe validMoves
+    return $ returnActionsFor entity (case validMove of
+                                        Nothing -> [ActWait]
+                                        (Just m) -> [ActMoveBy m])
   Just Zombie -> do
     towardsPlayer <- getDeltaTowardsPlayer entity
-    possibleMove <- traversableAt $ (entity ^. position) + towardsPlayer
-    return $ returnActionsFor entity (if possibleMove
-                                      then [ActMoveBy towardsPlayer]
-                                      else [ActWait])
-
+    let possibleMoves = splitCoordDelta towardsPlayer
+    validMoves <- filterM (entityCanMoveBy entity) possibleMoves
+    let validMove = listToMaybe validMoves
+    return $ returnActionsFor entity (case validMove of
+                                        Nothing -> [ActWait]
+                                        (Just m) -> [ActMoveBy m])
 -------
 
 validateActions :: ActionsByEntity -> GameM [Action]
@@ -148,7 +161,8 @@ traversableAt coord = do
   state <- ask
   return $ not (any isTraversable . entitiesAt coord $ allEntities state)
 
-
+entityCanMoveBy :: Entity -> Coord -> GameM Bool
+entityCanMoveBy e c = traversableAt (c + e ^. position)
 -------
 
 applyAction :: EntityRef -> Action -> GameM EffectsToEntities
