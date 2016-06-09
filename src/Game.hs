@@ -48,9 +48,6 @@ gameLoop display gameState = do
     Nothing -> gameLoop display state'
     Just C_Quit -> return ()
 
-gameRunning :: GameState -> Bool
-gameRunning state = state ^. continueRunning
-
 data GameCommand =  C_Quit |
                     C_Save |
                     C_Load deriving (Eq, Generic, Show)
