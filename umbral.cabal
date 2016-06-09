@@ -39,7 +39,8 @@ library
                       dequeue,
                       DebugTraceHelpers,
                       monad-loops,
-                      SFML
+                      SFML,
+                      random-shuffle
   default-language:    Haskell2010
 
 executable umbral-exe
