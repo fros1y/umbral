@@ -42,25 +42,40 @@ traceMsgM :: (Monad m, Show r) => [Char] -> m r -> m r
 traceMsgM a = State.liftM $ traceMsg a
 
 gameLoop :: DisplayContext -> GameState -> IO ()
-gameLoop display gameState = L.iterateM_ gameStep gameState where
-  gameStep gameState = Reader.runReaderT (runGame (gameStepM display)) gameState
+gameLoop display gameState = do
+  (state', gameCommand) <- Reader.runReaderT (runGame (gameStepM display)) gameState
+  case gameCommand of
+    Nothing -> gameLoop display state'
+    Just C_Quit -> return ()
 
-gameStepM :: DisplayContext -> GameM GameState
+gameRunning :: GameState -> Bool
+gameRunning state = state ^. continueRunning
+
+data GameCommand =  C_Quit |
+                    C_Save |
+                    C_Load deriving (Eq, Generic, Show)
+
+gameStepM :: DisplayContext -> GameM (GameState, Maybe GameCommand)
 gameStepM display = do
   state <- ask
   liftIO $ render display state
   entityToRun <- firstInQueue
   if stillActive entityToRun
     then entityStepM display (fromJust entityToRun)
-    else rotateAndStep (fromJust entityToRun)
+    else do
+      state' <- rotateAndStep (fromJust entityToRun)
+      return (state', Nothing)
 
-entityStepM :: DisplayContext -> Entity -> GameM GameState
+entityStepM :: DisplayContext -> Entity -> GameM (GameState, Maybe GameCommand)
 entityStepM display entityToRun = do
-  actions <- if isPlayerEntity entityToRun
-            then getPlayerActions display entityToRun
-            else traceMsgM ("entity acting: " ++ show (entityToRun ^. entityRef)) $ runEntity entityToRun
+  (actions, command) <- if isPlayerEntity entityToRun
+                        then getPlayerActions display entityToRun
+                        else do
+                          acts <- runEntity entityToRun
+                          return (acts, Nothing)
   effects <- applyActions actions
-  applyEffectsToEntities effects -- return mutated gameState
+  state' <- applyEffectsToEntities effects -- return mutated gameState
+  return (state', command)
 
 rotateAndStep :: Entity -> GameM GameState
 rotateAndStep exhaustedEntity = do
@@ -96,13 +111,15 @@ applyActions actionsByEntity@(ref, actions) = do
   return $ mconcat (cost:effects)
 
 ------
-getPlayerActions :: DisplayContext -> Entity -> GameM ActionsByEntity
+getPlayerActions :: DisplayContext -> Entity -> GameM (ActionsByEntity, Maybe GameCommand)
 getPlayerActions display player = do
-  command <- liftIO $ getPlayerCommand display
-  let act = case command of Nothing -> []
-                            Just (Go d) -> [ActMoveBy $ fromDirection d]
-                            _ -> trace "Unknown action" []
-  return $ returnActionsFor player act
+  input <- liftIO $ getPlayerCommand display
+  let (act, command) = case input of
+                            Nothing -> ([], Nothing)
+                            Just (Go d) -> ([ActMoveBy $ fromDirection d], Nothing)
+                            Just Quit -> ([], Just C_Quit)
+                            _ -> ([], Nothing)
+  return $ (returnActionsFor player act, command)
 
 -----
 
