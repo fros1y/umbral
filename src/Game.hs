@@ -38,7 +38,6 @@ import           Symbol
 import           UI
 import           Utils
 
-
 data GameCommand =  C_NOP |
                     C_Quit |
                     C_Save |
