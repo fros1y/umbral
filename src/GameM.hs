@@ -29,6 +29,21 @@ traversableAt coord = do
   state <- ask
   return $ not (any isTraversable . entitiesAt coord $ allEntities state)
 
+attackablesAt :: Coord -> GameM [Entity]
+attackablesAt coord = do
+  state <- ask
+  return $ filter isAttackable $ entitiesAt coord $ allEntities state
+
+isAttackableRef :: EntityRef -> GameM Bool
+isAttackableRef ref = do
+  entity <- getEntity ref
+  return $ maybe False isAttackable entity
+--
+-- attackable :: EntityRef -> GameM Bool
+-- attackable ref = do
+--   e <- getEntity ref
+--   return $ maybe False isAttackable e
+
 entityCanMoveBy :: Entity -> Coord -> GameM Bool
 entityCanMoveBy e c = traversableAt (c + e ^. position)
 

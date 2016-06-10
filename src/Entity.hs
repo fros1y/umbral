@@ -15,6 +15,7 @@ import           Control.Category
 import Symbol
 import Coord
 import           Data.Default
+import           Data.Maybe           (fromJust, isJust, isNothing, listToMaybe)
 
 type EntityRef       = Int
 type TargetEntityRef = EntityRef
@@ -81,8 +82,13 @@ isTraversable :: Entity -> Bool
 isTraversable e = maybe True checkTraversable (e ^. obstruction) where
   checkTraversable ob = ob ^. traversable
 
+isAttackable :: Entity -> Bool
+isAttackable e = isJust (e ^. health)
 
-
+isDead :: Entity -> Bool
+isDead e = case e ^. health of
+  Nothing -> False
+  (Just hp) -> hp ^. currHP <= 0
 
 mkBaseEntity :: EntityRef -> Coord -> Symbol -> Entity
 mkBaseEntity ref coord sym = Entity {   _entityRef = ref,

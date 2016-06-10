@@ -19,8 +19,9 @@ import           Debug.Trace
 import           Debug.Trace.Helpers
 import           GHC.Generics
 import           Prelude              hiding (Either (..), id, (.))
-import           Symbol
+import qualified System.Random.Shuffle as Random
 
+import           Symbol
 import ActorQueue
 import Entity
 import Actions
@@ -30,28 +31,60 @@ import UI
 import GameM
 import Utils
 
+type Proposer = GameM [Action]
+type Chooser = [Action] -> GameM (Maybe Action)
+
 runEntity :: Entity -> GameM ActionsByEntity
 runEntity entity = case entityStrategy entity of
   Nothing -> return $ returnActionsFor entity []
   Just Random -> runRandom entity
   Just Zombie -> runZombie entity
 
-
 runRandom :: Entity -> GameM ActionsByEntity
-runRandom entity = do
-  possibleMoves <- randomDeltas
-  validMoves <- filterM (entityCanMoveBy entity) possibleMoves
-  let validMove = listToMaybe validMoves
-  return $ returnActionsFor entity (case validMove of
-                                      Nothing -> [ActWait]
-                                      (Just m) -> [ActMoveBy m])
+runRandom entity = runEntity' propose choose entity where
+  propose = attacksBy entity +++ allMovesBy entity
+  choose = pickRandomAction
 
 runZombie :: Entity -> GameM ActionsByEntity
-runZombie entity = do
-  towardsPlayer <- getDeltaTowardsPlayer entity
-  let possibleMoves = splitCoordDelta towardsPlayer
-  validMoves <- filterM (entityCanMoveBy entity) possibleMoves
-  let validMove = listToMaybe validMoves
-  return $ returnActionsFor entity (case validMove of
+runZombie entity = runEntity' propose choose entity where
+  propose = attacksBy entity +++ dumbMovesTowardPlayer entity
+  choose = return <<< listToMaybe
+
+runEntity' :: Proposer -> Chooser -> Entity -> GameM ActionsByEntity
+runEntity' propose choose entity = do
+  possibleActions <- propose
+  chosenAct <- choose possibleActions
+  return $ returnActionsFor entity (case chosenAct of
                                       Nothing -> [ActWait]
-                                      (Just m) -> [ActMoveBy m])
+                                      (Just m) -> [m])
+
+attacksAt :: Coord -> GameM [Action]
+attacksAt coord = do
+  attackables <- attackablesAt coord
+  return $ fmap (ActAttack <<< _entityRef) attackables
+
+dumbMovesTowardPlayer :: Entity -> GameM [Action]
+dumbMovesTowardPlayer entity = do
+  towardsPlayer <- liftA splitCoordDelta $ getDeltaTowardsPlayer entity
+  validMoves <- filterM (entityCanMoveBy entity) towardsPlayer
+  return $ fmap ActMoveBy validMoves
+
+allMovesBy :: Entity -> GameM [Action]
+allMovesBy entity = do
+  validMoves <- filterM  (entityCanMoveBy entity)
+                          [(Coord xs ys) |  xs <- [-1, 0, 1],
+                                            ys <- [-1, 0, 1]]
+  return $ fmap ActMoveBy validMoves
+
+pickRandomAction :: (Random.MonadRandom m) => [Action] -> m (Maybe Action)
+pickRandomAction actions = do
+  randomActions <- Random.shuffleM actions
+  return $ listToMaybe randomActions
+
+attacksBy :: Entity -> GameM [Action]
+attacksBy entity = do
+  let coords = fmap (+ entity ^. position) [(Coord xs ys) |  xs <- [-1, 0, 1],
+                                              ys <- [-1, 0, 1],
+                                              not (xs == 0 && ys == 0)]
+  attacks <- mapM attacksAt coords
+  return $ mconcat attacks

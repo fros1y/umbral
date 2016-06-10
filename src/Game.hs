@@ -39,7 +39,8 @@ import AIStrategies
 import Serialize
 
 
-data GameCommand =  C_Quit |
+data GameCommand =  C_NOP |
+                    C_Quit |
                     C_Save |
                     C_Load deriving (Eq, Generic, Show)
 
@@ -60,6 +61,7 @@ gameLoop display gameState = do
   (state', gameCommand) <- Reader.runReaderT (runGame (gameStepM display)) gameState
   case gameCommand of
     Nothing -> gameLoop display state'
+    Just C_NOP -> gameLoop display state'
     Just C_Save -> do
       saveGame state'
       gameLoop display state'
@@ -78,25 +80,35 @@ gameStepM display = do
   if stillActive entityToRun
     then entityStepM display (fromJust entityToRun)
     else do
-      state' <- rotateAndStep (fromJust entityToRun)
+      state' <- rotateAndStep entityToRun
       return (state', Nothing)
 
 entityStepM :: DisplayContext -> Entity -> GameM (GameState, Maybe GameCommand)
 entityStepM display entityToRun = do
+  state <- ask
   (actions, command) <- if isPlayerEntity entityToRun
                         then getPlayerActions display entityToRun
                         else do
                           acts <- runEntity entityToRun
                           return (acts, Nothing)
-  effects <- applyActions actions
-  state' <- applyEffectsToEntities effects -- return mutated gameState
-  return (state', command)
+  if (isJust command)
+    then return (state, command)
+    else do
+      effects <- applyActions (traceMsg "actions: " actions)
+      state' <- applyEffectsToEntities (traceMsg "effects: " effects) -- return mutated gameState
+      return (state', command)
 
-rotateAndStep :: Entity -> GameM GameState
-rotateAndStep exhaustedEntity = do
-  let recover = returnEffectsForRef (exhaustedEntity ^. entityRef) [EffRecoverAP]
-  gameState' <- applyEffectsToEntities recover
-  return $ gameState' & actorQueue %~ rotate
+rotateAndStep :: Maybe Entity -> GameM GameState
+rotateAndStep e = do
+  case e of
+    Nothing -> do
+      gameState <- ask
+      return $ gameState & actorQueue %~ dropFront
+    (Just e') -> do
+                  let recover = returnEffectsForRef (e' ^. entityRef) [EffRecoverAP]
+                  gameState' <- applyEffectsToEntities recover
+                  return $ gameState' & actorQueue %~ rotate
+
 
 firstInQueue :: GameM (Maybe Entity)
 firstInQueue = do
@@ -105,14 +117,28 @@ firstInQueue = do
   case ref of Nothing -> return Nothing
               Just r -> getEntity r
 
+isAttack :: Coord -> GameM (Maybe EntityRef)
+isAttack coord = do
+  attackables <- attackablesAt coord
+  return $ _entityRef <$> listToMaybe attackables
+
+
+
 getPlayerActions :: DisplayContext -> Entity -> GameM (ActionsByEntity, Maybe GameCommand)
 getPlayerActions display player = do
+  let playerActs = returnActionsFor player
   input <- liftIO $ getPlayerCommand display
-  let (act, command) = case input of
-                            Nothing -> ([], Nothing)
-                            Just (Go d) -> ([ActMoveBy $ fromDirection d], Nothing)
-                            Just Quit -> ([], Just C_Quit)
-                            Just Save -> ([], Just C_Save)
-                            Just Load -> ([], Just C_Load)
-                            _ -> ([], Nothing)
-  return $ (returnActionsFor player act, command)
+  case input of
+    Nothing -> return (playerActs [], Just C_NOP)
+    Just Pass -> return (playerActs [ActWait], Nothing)
+    Just Quit -> return (playerActs [], Just C_Quit)
+    Just Save -> return (playerActs [], Just C_Save)
+    Just Load -> return (playerActs [], Just C_Load)
+    Just (Go d) -> do
+      let delta = fromDirection d
+      attacked <- isAttack (player ^. position + delta)
+      case attacked of
+        Nothing -> return (playerActs [ActMoveBy $ fromDirection d], Nothing)
+        (Just ref) -> return (playerActs [ActAttack ref], Nothing)
+
+    _ -> return (returnActionsFor player [], Nothing)

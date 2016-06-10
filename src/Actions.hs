@@ -51,10 +51,12 @@ applyActions actionsByEntity@(ref, actions) = do
 
 validActionBy :: Entity -> Action -> GameM Bool
 validActionBy e (ActMoveBy delta) = traversableAt $ (e ^. position) + delta
+validActionBy e (ActAttack ref) = isAttackableRef ref
 validActionBy _ _ = return True
 
 applyAction :: EntityRef -> Action -> GameM EffectsToEntities
 applyAction ref ActWait             = return $ returnEffectsForRef ref [EffPass]
+applyAction ref (ActAttack aref)    = return $ returnEffectsForRef aref [EffDamaged 1]
 applyAction ref (ActMoveBy delta)   = do
   e <- fromJust <$> getEntity ref
   return (returnEffectsForRef ref [EffMoveTo $ (e ^. position) + delta])

@@ -113,6 +113,7 @@ render display state = let ?context = display in do
 
 -----
 data PlayerCommand  = Go Direction
+                    | Pass
                     | Save
                     | Load
                     | Quit deriving (Show, Read, Eq, Generic)
@@ -135,6 +136,7 @@ playerCommandFromKey SFML.SFEvtKeyPressed {SFML.code = keyCode,
                                       SFML.ctrl = ctrlK,
                                       SFML.shift = shiftK,
                                       SFML.sys = sysK} = case (keyCode, shiftK) of
+                                        (SFML.KeySpace, _) -> Just $ Pass
                                         (SFML.KeyUp, _) -> Just $ Go Up
                                         (SFML.KeyDown, _) -> Just $ Go Down
                                         (SFML.KeyLeft, _) -> Just $ Go Left

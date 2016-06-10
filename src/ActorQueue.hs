@@ -15,8 +15,13 @@ import Entity
 
 type ActorQueue = DQ.BankersDequeue EntityRef
 
+dropFront :: ActorQueue -> ActorQueue
+dropFront queue = case DQ.popFront queue of
+  Nothing -> DQ.empty
+  Just (a, q) -> q
+
 rotate :: ActorQueue -> ActorQueue
-rotate queue = traceMsg "rotating queue to: " queueChoice where
+rotate queue = queueChoice where
   potentialQ = do
     (exiting, queue') <- DQ.popFront queue
     return $ DQ.pushBack queue' exiting

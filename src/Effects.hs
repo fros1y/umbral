@@ -55,12 +55,16 @@ applyEffects :: EntityRef -> [Effect] -> Entity -> Maybe Entity
 applyEffects _ effects e = foldr applyEffect (Just e) effects
 
 applyEffect :: Effect -> Maybe Entity -> Maybe Entity
-applyEffect EffDestroy          e = traceMsg "EffDestroy: " Nothing
-applyEffect EffRecoverAP        e = traceMsg "EffRecoverAP: " $ pure recoverAP <*> e
-applyEffect (EffSpendAP ap)     e = traceMsg "EffSpendAP: " $ spendAP <$> e <*> pure ap
-applyEffect (EffDamaged dmg)    e = traceMsg "EffDamaged: " $ applyDamage <$> e <*> pure dmg
-applyEffect (EffMoveTo pos)     e = traceMsg "EffMoveTo: " $ moveTo <$> e <*> pure pos
-applyEffect EffPass             e = traceMsg "EffPass: " $ pure spendAllAP <*> e
+applyEffect EffDestroy          e = Nothing
+applyEffect EffRecoverAP        e = pure recoverAP <*> e
+applyEffect (EffSpendAP ap)     e = spendAP <$> e <*> pure ap
+applyEffect (EffDamaged dmg)    e = do
+  e' <- applyDamage <$> e <*> pure dmg
+  if isDead e'
+    then Nothing
+    else Just e'
+applyEffect (EffMoveTo pos)     e = moveTo <$> e <*> pure pos
+applyEffect EffPass             e = pure spendAllAP <*> e
 -- applyEffect _                   e = traceMsg "UNHANDLED EFF" $ e
 
 --------
