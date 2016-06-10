@@ -3,17 +3,17 @@
 
 module GameM where
 
-import qualified Control.Monad.Random as Random
-import qualified Control.Monad.State  as State
-import           Control.Monad.Reader as Reader
-import           Control.Lens
 import           Control.Category
-import           Prelude              hiding (Either (..), id, (.))
+import           Control.Lens
+import qualified Control.Monad.Random as Random
+import           Control.Monad.Reader as Reader
+import qualified Control.Monad.State  as State
 import qualified Data.IntMap.Strict   as IntMap
+import           Prelude              hiding (Either (..), id, (.))
 
-import GameState
-import Entity
-import Coord
+import           Coord
+import           Entity
+import           GameState
 
 newtype GameM a = GameM {
   runGame :: (Reader.ReaderT GameState IO) a

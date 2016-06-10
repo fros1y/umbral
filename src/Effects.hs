@@ -1,22 +1,21 @@
 
-{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Effects where
 
-import           Debug.Trace
-import           Debug.Trace.Helpers
-import           Prelude              hiding (Either (..), id, (.))
 import           Control.Applicative
 import           Control.Category
-import           GHC.Generics
 import           Control.Lens
 import           Control.Monad.Reader as Reader
-
 import qualified Data.IntMap.Strict   as IntMap
+import           Debug.Trace
+import           Debug.Trace.Helpers
+import           GHC.Generics
+import           Prelude              hiding (Either (..), id, (.))
 
-import Coord
-import Entity
-import GameM
-import GameState
+import           Coord
+import           Entity
+import           GameM
+import           GameState
 
 data Effect = EffMoveTo Coord
             | EffDamaged Int

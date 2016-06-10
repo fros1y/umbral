@@ -1,17 +1,14 @@
 module ActorQueue where
 
-import qualified Data.Dequeue         as DQ
-
-import           Control.Lens
-import           Debug.Trace
-import           Debug.Trace.Helpers
-import           Prelude              hiding (Either (..), id, (.))
 import           Control.Applicative
 import           Control.Category
+import           Control.Lens
+import qualified Data.Dequeue        as DQ
+import           Debug.Trace
+import           Debug.Trace.Helpers
+import           Prelude             hiding (Either (..), id, (.))
 
-
-
-import Entity
+import           Entity
 
 type ActorQueue = DQ.BankersDequeue EntityRef
 

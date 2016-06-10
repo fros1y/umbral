@@ -1,21 +1,21 @@
-{-# LANGUAGE TemplateHaskell            #-}
-{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveGeneric   #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Entity where
 
-import           Control.Lens
-import           GHC.Generics
-
-import           Debug.Trace
-import           Debug.Trace.Helpers
-import           Prelude              hiding (Either (..), id, (.))
 import           Control.Applicative
 import           Control.Category
-
-import Symbol
-import Coord
+import           Control.Lens
 import           Data.Default
-import           Data.Maybe           (fromJust, isJust, isNothing, listToMaybe)
+import           Data.Maybe          (fromJust, isJust, isNothing, listToMaybe)
+import           Debug.Trace
+import           Debug.Trace.Helpers
+import           GHC.Generics
+import           Prelude             hiding (Either (..), id, (.))
+
+import           Coord
+import           Symbol
+
 
 type EntityRef       = Int
 type TargetEntityRef = EntityRef
@@ -54,11 +54,11 @@ mkActor :: Strategy -> Actor
 mkActor strat = Actor {_strategy = strat, _actionPoints = 100, _speed = 100}
 
 data Entity = Entity {
-  _entityRef :: EntityRef,
-  _position  :: Coord,
-  _symbol    :: Symbol,
-  _health    :: Maybe Health,
-  _actor     :: Maybe Actor,
+  _entityRef   :: EntityRef,
+  _position    :: Coord,
+  _symbol      :: Symbol,
+  _health      :: Maybe Health,
+  _actor       :: Maybe Actor,
   _obstruction :: Maybe Obstruction
 } deriving (Show, Generic)
 makeLenses ''Entity

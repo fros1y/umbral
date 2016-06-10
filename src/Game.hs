@@ -14,7 +14,7 @@ import qualified Control.Monad.Loops  as L
 import qualified Control.Monad.Random as Random
 import           Control.Monad.Reader as Reader
 import qualified Control.Monad.State  as State
-import           Coord
+import qualified Data.Aeson           as Aeson
 import           Data.Default
 import qualified Data.Dequeue         as DQ
 import qualified Data.IntMap.Strict   as IntMap
@@ -24,19 +24,19 @@ import           Debug.Trace
 import           Debug.Trace.Helpers
 import           GHC.Generics
 import           Prelude              hiding (Either (..), id, (.))
-import           Symbol
-import qualified Data.Aeson as Aeson
 
-import ActorQueue
-import Entity
-import Actions
-import Effects
-import GameState
-import UI
-import GameM
-import Utils
-import AIStrategies
-import Serialize
+import           Actions
+import           ActorQueue
+import           AIStrategies
+import           Coord
+import           Effects
+import           Entity
+import           GameM
+import           GameState
+import           Serialize
+import           Symbol
+import           UI
+import           Utils
 
 
 data GameCommand =  C_NOP |
@@ -101,7 +101,7 @@ entityStepM display entityToRun = do
 rotateAndStep :: Maybe Entity -> GameM GameState
 rotateAndStep e = do
   case e of
-    Nothing -> do
+    Nothing -> do -- this happens if an entity has been destroyed (died)
       gameState <- ask
       return $ gameState & actorQueue %~ dropFront
     (Just e') -> do

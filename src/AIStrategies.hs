@@ -4,32 +4,33 @@ import           Control.Applicative
 import           Control.Category
 import           Control.Concurrent
 import           Control.Lens
-import           Control.Monad        (when)
-import qualified Control.Monad.Loops  as L
-import qualified Control.Monad.Random as Random
-import           Control.Monad.Reader as Reader
-import qualified Control.Monad.State  as State
+import           Control.Monad         (when)
+import qualified Control.Monad.Loops   as L
+import qualified Control.Monad.Random  as Random
+import           Control.Monad.Reader  as Reader
+import qualified Control.Monad.State   as State
 import           Coord
 import           Data.Default
-import qualified Data.Dequeue         as DQ
-import qualified Data.IntMap.Strict   as IntMap
-import qualified Data.Map.Strict      as Map
-import           Data.Maybe           (fromJust, isJust, isNothing, listToMaybe)
+import qualified Data.Dequeue          as DQ
+import qualified Data.IntMap.Strict    as IntMap
+import qualified Data.Map.Strict       as Map
+import           Data.Maybe            (fromJust, isJust, isNothing,
+                                        listToMaybe)
 import           Debug.Trace
 import           Debug.Trace.Helpers
 import           GHC.Generics
-import           Prelude              hiding (Either (..), id, (.))
+import           Prelude               hiding (Either (..), id, (.))
 import qualified System.Random.Shuffle as Random
 
+import           Actions
+import           ActorQueue
+import           Effects
+import           Entity
+import           GameM
+import           GameState
 import           Symbol
-import ActorQueue
-import Entity
-import Actions
-import Effects
-import GameState
-import UI
-import GameM
-import Utils
+import           UI
+import           Utils
 
 type Proposer = GameM [Action]
 type Chooser = [Action] -> GameM (Maybe Action)

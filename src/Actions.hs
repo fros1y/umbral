@@ -1,21 +1,22 @@
-{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Actions where
 
-import           Debug.Trace
-import           Debug.Trace.Helpers
-import           Prelude              hiding (Either (..), id, (.))
 import           Control.Applicative
 import           Control.Category
-import           GHC.Generics
 import           Control.Lens
-import           Data.Maybe           (fromJust, isJust, isNothing, listToMaybe)
 import           Control.Monad.Reader as Reader
-import Coord
-import Entity
-import Effects
-import Entity
-import GameM
-import GameState
+import           Data.Maybe           (fromJust, isJust, isNothing, listToMaybe)
+import           Debug.Trace
+import           Debug.Trace.Helpers
+import           GHC.Generics
+import           Prelude              hiding (Either (..), id, (.))
+
+import           Coord
+import           Effects
+import           Entity
+import           Entity
+import           GameM
+import           GameState
 
 data Action =
               ActWait |
