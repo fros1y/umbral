@@ -1,12 +1,14 @@
 module Level where
 
-import           Data.Map.Strict      as Map
-import           Prelude              hiding (Either (..), id, (.))
 import           Control.Category
 import           Control.Lens
 import           Data.Default
+import           Data.Map.Strict  as Map
+import           Prelude          hiding (Either (..), id, (.))
 
-import Coord
+import           Coord
+import           Entity
+import           GameState
 
 (<>) :: Monoid m => m -> m -> m
 (<>) = mappend
@@ -40,6 +42,24 @@ mkFloors bounds = mkTiles Floor $ coordsWithin bounds
 mkBounds :: Bounds -> LevelBuilder
 mkBounds bounds = mkTiles Wall $ borderCoords bounds
 
+mkRoom :: Bounds -> LevelBuilder
+mkRoom bounds = (mkFloors bounds) <> (mkBounds bounds)
+
 conflict :: LevelBuilder -> LevelBuilder -> Bool
 conflict (LevelBuilder builder1) (LevelBuilder builder2) = Map.size intersect /= 0 where
   intersect = Map.intersection builder1 builder2
+
+mergeLevelBuilder :: LevelBuilder -> GameState -> GameState
+mergeLevelBuilder builder state = addEntitiesToGame entities state where
+  entities = mkEntitiesFrom builder
+
+mkEntitiesFrom :: LevelBuilder -> [Entity]
+mkEntitiesFrom (LevelBuilder builder) = fmap mkEntityFrom (toList builder)
+
+mkEntityFrom :: (Coord, Tile) -> Entity
+mkEntityFrom (coord, Wall) = mkWall coord
+mkEntityFrom (coord, Floor) = mkFloor coord
+
+mkLevel :: GameState
+mkLevel = mergeLevelBuilder level $ mkGameState (Coord 15 10) where
+  level = mkRoom (Bounds (Coord 0 0) (Coord 30 20))

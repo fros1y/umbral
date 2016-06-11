@@ -96,7 +96,7 @@ mkBaseEntity coord sym = Entity {       _entityRef = -99,
                                         _symbol = sym,
                                         _health = Nothing,
                                         _actor = Nothing,
-                                        _obstruction = def
+                                        _obstruction = Just def
                                     }
 
 mkPlayer :: Coord -> Entity
@@ -123,4 +123,9 @@ mkZombie coord = baseEntity & health .~ Just (mkHealth 1)
 mkWall :: Coord -> Entity
 mkWall coord = baseEntity where
   sym = def & glyph .~ '#'
+  baseEntity = mkBaseEntity coord sym
+
+mkFloor :: Coord -> Entity
+mkFloor coord = baseEntity & obstruction .~ Nothing where
+  sym = def & glyph .~ '.'
   baseEntity = mkBaseEntity coord sym

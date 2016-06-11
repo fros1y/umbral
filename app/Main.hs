@@ -11,13 +11,9 @@ import Coord
 import Entity
 import GameState
 import UI
+import Level
 
-gameState = addEntitiesToGame
-                [ mkWall (Coord 2 2),
-                  mkWall (Coord 4 0),
-                  mkRandomRat (Coord 5 5),
-                  mkZombie (Coord 10 3)]
-            $ mkGameState (Coord 0 0)
+gameState = mkLevel
 
 main :: IO ()
 main = do

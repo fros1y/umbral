@@ -27,7 +27,7 @@ getEntity ref = do
 traversableAt :: Coord -> GameM Bool
 traversableAt coord = do
   state <- ask
-  return $ not (any isTraversable . entitiesAt coord $ allEntities state)
+  return $ all isTraversable (entitiesAt coord $ allEntities state)
 
 attackablesAt :: Coord -> GameM [Entity]
 attackablesAt coord = do
