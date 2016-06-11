@@ -90,8 +90,8 @@ isDead e = case e ^. health of
   Nothing -> False
   (Just hp) -> hp ^. currHP <= 0
 
-mkBaseEntity :: EntityRef -> Coord -> Symbol -> Entity
-mkBaseEntity ref coord sym = Entity {   _entityRef = ref,
+mkBaseEntity :: Coord -> Symbol -> Entity
+mkBaseEntity coord sym = Entity {       _entityRef = -99,
                                         _position = coord,
                                         _symbol = sym,
                                         _health = Nothing,
@@ -99,28 +99,28 @@ mkBaseEntity ref coord sym = Entity {   _entityRef = ref,
                                         _obstruction = def
                                     }
 
-mkPlayer :: EntityRef -> Coord -> Entity
-mkPlayer ref coord = baseEntity & health .~ Just (mkHealth 100)
-                                & actor .~ Just (mkActor Player)
+mkPlayer :: Coord -> Entity
+mkPlayer coord = baseEntity & health .~ Just (mkHealth 100)
+                            & actor .~ Just (mkActor Player)
                     where
-                      baseEntity = mkBaseEntity ref coord sym
+                      baseEntity = mkBaseEntity coord sym
                       sym = def & glyph .~ '@'
 
-mkRandomRat :: EntityRef -> Coord -> Entity
-mkRandomRat ref coord = baseEntity  & health .~ Just (mkHealth 1)
-                                    & actor .~ Just (mkActor Random)
+mkRandomRat :: Coord -> Entity
+mkRandomRat coord = baseEntity  & health .~ Just (mkHealth 1)
+                                & actor .~ Just (mkActor Random)
                     where
-                      baseEntity = mkBaseEntity ref coord sym
+                      baseEntity = mkBaseEntity coord sym
                       sym = def & glyph .~ 'r'
 
-mkZombie :: EntityRef -> Coord -> Entity
-mkZombie ref coord = baseEntity & health .~ Just (mkHealth 1)
-                                & actor .~ Just (( mkActor Zombie) & speed .~ 50)
+mkZombie :: Coord -> Entity
+mkZombie coord = baseEntity & health .~ Just (mkHealth 1)
+                            & actor .~ Just (( mkActor Zombie) & speed .~ 50)
                     where
-                      baseEntity = mkBaseEntity ref coord sym
+                      baseEntity = mkBaseEntity coord sym
                       sym = def & glyph .~ 'Z'
 
-mkWall :: EntityRef -> Coord -> Entity
-mkWall ref coord = baseEntity where
+mkWall :: Coord -> Entity
+mkWall coord = baseEntity where
   sym = def & glyph .~ '#'
-  baseEntity = mkBaseEntity ref coord sym
+  baseEntity = mkBaseEntity coord sym

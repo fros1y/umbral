@@ -21,27 +21,33 @@ import ActorQueue
 
 data GameState = GameState {
   _gameEntities :: IntMap.IntMap Entity,
-  _actorQueue   :: ActorQueue
+  _actorQueue   :: ActorQueue,
+  _nextEntityRef :: Int
 } deriving (Show, Generic)
 makeLenses ''GameState
 
 mkGameState :: Coord -> GameState
 mkGameState playerStart = GameState {
                             _gameEntities = entities,
-                            _actorQueue = queue
+                            _actorQueue = queue,
+                            _nextEntityRef = 2
                           }
                           where
-                            player = mkPlayer 1 playerStart
+                            player = (mkPlayer playerStart) & entityRef .~ 1 
                             entities = IntMap.singleton 1 player
                             queue = DQ.fromList [1]
 
+mkNewEntityRef :: GameState -> (EntityRef, GameState)
+mkNewEntityRef state = (state ^. nextEntityRef, state & nextEntityRef +~ 1)
+
 addEntityToGame :: Entity -> GameState -> GameState
-addEntityToGame entity gameState = gameState  & gameEntities %~ addEntity
+addEntityToGame entity gameState = gameState'  & gameEntities %~ addEntity
                                               & actorQueue %~ addQueue
                             where
-                              ref = entity ^. entityRef
-                              addEntity ents = IntMap.insert ref entity ents
-                              addQueue queue =  if isJust $ entity ^. actor
+                              (ref, gameState') = mkNewEntityRef gameState
+                              entity' = entity & entityRef .~ ref
+                              addEntity ents = IntMap.insert ref entity' ents
+                              addQueue queue =  if isJust $ entity' ^. actor
                                                 then DQ.pushBack queue ref
                                                 else queue
 
