@@ -1,11 +1,8 @@
 module Main where
 
-
-import           Prelude              hiding (Either (..), id, (.))
-import           Control.Applicative
-import           Control.Category
-
-
+import Prelude hiding (Either(..), id, (.))
+import Control.Applicative
+import Control.Category
 import Game
 import Coord
 import Entity
@@ -17,6 +14,6 @@ gameState = mkLevel
 
 main :: IO ()
 main = do
-  display <- initDisplay
-  gameLoop display gameState
-  endDisplay display
+    display <- initDisplay
+    gameLoop display gameState
+    endDisplay display
