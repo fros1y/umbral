@@ -12,6 +12,7 @@ import Control.Lens
 import Data.Map.Strict as Map
 import Data.IntMap.Strict as IntMap
 import qualified System.Random.Shuffle as Random
+import Control.Monad
 
 data Coord = Coord
     { _x :: Integer
@@ -53,11 +54,12 @@ quot :: Coord -> Coord -> Coord
 quot (Coord ax ay) (Coord bx by) =
     Coord (ax `Prelude.quot` bx) (ay `Prelude.quot` by)
 
-toPair :: Coord -> (Integer, Integer)
-toPair (Coord x y) = (x, y)
+toPair :: Integral i => Coord -> (i, i)
+toPair (Coord x y) = (fromInteger x, fromInteger y)
 
-fromPair :: (Integer, Integer) -> Coord
-fromPair (x,y) = Coord x y
+fromPair :: Integral i => (i, i) -> Coord
+fromPair (x,y) = Coord (fromIntegral x) (fromIntegral y)
+
 
 coordsWithin :: Bounds -> [Coord]
 coordsWithin (Bounds (Coord lx ly) (Coord ux uy)) =
@@ -143,3 +145,35 @@ randomDeltas =
         [ (Coord xs ys)
         | xs <- [-1, 0, 1]
         , ys <- [-1, 0, 1] ]
+
+distance :: Floating a => Coord -> Coord -> a
+distance (Coord x0 y0) (Coord x1 y1) = sqrt $ fromIntegral ((x1 - x0)^2 + (y1 - y0)^2)
+
+line :: Coord -> Coord -> [Coord]
+line c0 c1 = fromPair <$> line' (toPair c0) (toPair c1)
+
+segment :: Coord -> Coord -> Int -> [Coord]
+segment p1 p2 r = takeWhile lessThanR $ line p1 p2
+  where
+    lessThanR p3 = ceiling (distance p1 p3) <= fromIntegral r
+
+circleCoords :: Integer -> Coord -> [Coord]
+circleCoords r center = fmap (+ center) $ do
+  x <- [-r..r]
+  y <- [-r..r]
+  guard (distance origin (Coord x y) < fromIntegral r)
+  return (Coord x y)
+
+line' :: (Int, Int) -> (Int, Int) -> [(Int, Int)]
+line' p1@(x0, y0) (x1, y1) =
+    let (dx, dy) = (x1 - x0, y1 - y0)
+        xyStep b (x, y) = (x + signum dx,     y + signum dy * b)
+        yxStep b (x, y) = (x + signum dx * b, y + signum dy)
+        (p, q, step) | abs dx > abs dy = (abs dy, abs dx, xyStep)
+                     | otherwise       = (abs dx, abs dy, yxStep)
+        walk w xy = xy : walk (tail w) (step (head w) xy)
+    in  walk (balancedWord p q 0) (x0, y0)
+  where
+    balancedWord :: Int -> Int -> Int -> [Int]
+    balancedWord p q eps | eps + p < q = 0 : balancedWord p q (eps + p)
+    balancedWord p q eps               = 1 : balancedWord p q (eps + p - q)
