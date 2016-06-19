@@ -28,6 +28,7 @@ library
                       , AIStrategies
                       , Serialize
                       , Level
+                      , Utils
 
 
   build-depends:        base >= 4.7 && < 5,
