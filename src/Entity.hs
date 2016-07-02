@@ -103,6 +103,11 @@ isTraversable e = maybe True checkTraversable (e ^. obstruction)
   where
     checkTraversable ob = ob ^. traversable
 
+isOpaque :: Entity -> Bool
+isOpaque e = maybe False checkOpaque (e^.obstruction)
+  where
+    checkOpaque op = not (op ^. transparent)
+
 isAttackable :: Entity -> Bool
 isAttackable e = isJust (e ^. health)
 

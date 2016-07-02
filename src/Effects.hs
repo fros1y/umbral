@@ -74,8 +74,7 @@ applyEffect (EffDamaged dmg) e = do
 applyEffect (EffMoveTo pos) e = moveTo <$> e <*> pure pos
 applyEffect EffPass e = pure spendAllAP <*> e
 
--- applyEffect _                   e = traceMsg "UNHANDLED EFF" $ e
---------
+
 spendAllAP
     :: Entity -> Entity
 spendAllAP e = e & actor %~ (liftA spendAllAP')

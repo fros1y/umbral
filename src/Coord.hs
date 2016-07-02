@@ -152,10 +152,8 @@ distance (Coord x0 y0) (Coord x1 y1) = sqrt $ fromIntegral ((x1 - x0)^2 + (y1 - 
 line :: Coord -> Coord -> [Coord]
 line c0 c1 = fromPair <$> line' (toPair c0) (toPair c1)
 
-segment :: Coord -> Coord -> Int -> [Coord]
-segment p1 p2 r = takeWhile lessThanR $ line p1 p2
-  where
-    lessThanR p3 = ceiling (distance p1 p3) <= fromIntegral r
+segment :: Coord -> Coord -> [Coord] -- Does not include final point
+segment p1 p2 = takeWhile (/= p2 )$ line p1 p2
 
 circleCoords :: Integer -> Coord -> [Coord]
 circleCoords r center = fmap (+ center) $ do

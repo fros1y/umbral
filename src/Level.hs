@@ -73,4 +73,4 @@ mkEntityFrom (coord,Floor) = mkFloor coord
 mkLevel :: GameState
 mkLevel = mergeLevelBuilder level $ mkGameState (Coord 15 10)
   where
-    level = mkRoom (Bounds (Coord 0 0) (Coord 30 20))
+    level = mkRoom (Bounds (Coord 0 0) (Coord 30 20)) <> mkTiles Wall [Coord 5 5, Coord 11 9]

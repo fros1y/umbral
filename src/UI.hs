@@ -102,15 +102,33 @@ putEntity entity = putSymbol (celltoScreen (entity ^. position)) (entity ^. symb
 
 convertfromCoord (Coord xc yc) = SFML.Vec2f (fromIntegral xc) (fromIntegral yc)
 
+centerViewOn :: (?context :: DisplayContext) => Coord -> IO ()
+centerViewOn coord = do
+  view <- SFML.getDefaultView (?context ^. wnd)
+  SFML.setViewCenter view $ convertfromCoord $ celltoScreen coord
+  SFML.setView (?context ^. wnd) view
+  return ()
+
 render :: DisplayContext -> GameState -> IO ()
 render display state = let ?context = display in do
     SFML.clearRenderWindow (display ^. wnd) $ SFML.Color 0 0 0 255
-    view <- SFML.getDefaultView (display ^. wnd)
-    SFML.setViewCenter view $ convertfromCoord $ celltoScreen (state ^. playerPosition)
-    SFML.setView (display ^. wnd) view
-    mapM_ putEntity (allEntities state)
+    centerViewOn (state ^. playerPosition)
+    mapM_ putEntity $ visibleEntities (state ^. player) state --(allEntities state)
     SFML.display (display ^. wnd)
 
+visibleEntities :: Entity -> GameState -> [Entity]
+visibleEntities fromEntity state = filter visible (allEntities state) where
+  visible e = inFOV fromEntity e state
+  --visible e = (e ^. position) `elem` circleCoords 5 (fromEntity ^. position)
+
+safeTail :: [a] -> [a]
+safeTail (x:xs) = xs
+safeTail _ = []
+
+inFOV :: Entity -> Entity -> GameState -> Bool
+inFOV from to state = not (any blocking los) where
+  los = safeTail $ segment (from^.position) (to^.position)
+  blocking coord = any isOpaque $ entitiesAt coord $ allEntities state
 -----
 data PlayerCommand  = Go Direction
                     | Pass
