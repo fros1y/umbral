@@ -109,17 +109,18 @@ centerViewOn coord = do
   SFML.setView (?context ^. wnd) view
   return ()
 
-render :: DisplayContext -> GameState -> IO ()
-render display state = let ?context = display in do
+render :: DisplayContext -> GameState -> [Coord] -> IO ()
+render display state visibleCoords = let ?context = display in do
     SFML.clearRenderWindow (display ^. wnd) $ SFML.Color 0 0 0 255
     centerViewOn (state ^. playerPosition)
-    mapM_ putEntity $ visibleEntities (state ^. player) state --(allEntities state)
+    let visible e = ((e ^. position) `elem` visibleCoords) || (isPlayerEntity e)
+        visibleEntities = filter visible (allEntities state)
+    mapM_ putEntity $ visibleEntities -- (state ^. player) state --(allEntities state)
     SFML.display (display ^. wnd)
 
-visibleEntities :: Entity -> GameState -> [Entity]
-visibleEntities fromEntity state = filter visible (allEntities state) where
-  visible e = inFOV fromEntity e state
-  --visible e = (e ^. position) `elem` circleCoords 5 (fromEntity ^. position)
+-- visibleEntities :: Entity -> GameState -> [Entity]
+-- visibleEntities fromEntity state = filter visible (allEntities state) where
+--   visible e = inFOV fromEntity e state
 
 safeTail :: [a] -> [a]
 safeTail (x:xs) = xs

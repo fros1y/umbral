@@ -10,6 +10,7 @@ import Control.Category
 import Control.Concurrent
 import Control.Lens
 import Control.Monad (when)
+import FOV as FOV
 import qualified Control.Monad.Loops as L
 import qualified Control.Monad.Random as Random
 import Control.Monad.Reader as Reader
@@ -37,8 +38,9 @@ import Symbol
 import UI
 import Utils
 
+
 data GameCommand
-    = C_NOP 
+    = C_NOP
     | C_Quit
     | C_Save
     | C_Load
@@ -73,10 +75,21 @@ gameLoop display gameState = do
                 (Just loadState') -> gameLoop display loadState'
         Just C_Quit -> return ()
 
+
+
+-- data LevelLighting =
+--
+-- -- idea is that at the start of each loop, we can map out where the entities
+-- -- are located, figure out lighting levels, even calculate visibilities
+--
+-- lightLevel :: GameM (LevelLighting)
+-- lightLevel = undefined
+
 gameStepM :: DisplayContext -> GameM (GameState, Maybe GameCommand)
 gameStepM display = do
     state <- ask
-    liftIO $ render display state
+    visible <- getVisibleBy (state ^. player)
+    liftIO $ render display state visible
     entityToRun <- firstInQueue
     if stillActive entityToRun
         then entityStepM display (fromJust entityToRun)
