@@ -58,20 +58,21 @@ instance ToJSON Entity
 
 instance FromJSON Entity
 
+instance ToJSON LevelState
+instance FromJSON LevelState
+
 instance ToJSON GameState where
     toJSON GameState{..} = object [
-        "gameEntities" .= _gameEntities,
+        "currLevel" .= _currLevel,
         "actorQueue" .= _actorQueue,
-        "nextEntityRef" .= _nextEntityRef,
-        "bounding" .= _bounding
+        "nextEntityRef" .= _nextEntityRef
         ]
 
 instance FromJSON GameState where
     parseJSON = withObject "gamestate" $ \o -> do
-        _gameEntities <- o .: "gameEntities"
+        _currLevel <- o .: "currLevel"
         _actorQueue <- o .: "actorQueue"
         _nextEntityRef <- o .: "nextEntityRef"
-        _bounding <- o .: "bounding"
         _entitiesByCoord <- return Nothing
         _obstructionByCoord <- return Nothing
         _visibleToPlayer <- return Nothing

@@ -63,7 +63,7 @@ prepareMapsForState state = state { _entitiesByCoord = Just entityMap,
                                     _obstructionByCoord = Just obstructionMap,
                                     _visibleToPlayer = Just playerVisible
                                 } where
-    (entityMap, obstructionMap) = buildMaps state
+    (entityMap, obstructionMap) = buildMaps (state ^. currLevel)
     playerVisible = mkVisibleMap (state ^. player) obstructionMap
 
 gameLoop :: DisplayContext -> GameState -> IO ()

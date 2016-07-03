@@ -55,8 +55,8 @@ applyEffectsToEntities effects = do
                 (const IntMap.empty)
                 id
                 (getMap effects)
-                (gameState ^. gameEntities)
-        gameState' = gameState & gameEntities .~ gameEntities'
+                (gameState ^. (currLevel . gameEntities))
+        gameState' = gameState & (currLevel . gameEntities) .~ gameEntities'
     return $ gameState'
 
 applyEffects :: EntityRef -> [Effect] -> Entity -> Maybe Entity

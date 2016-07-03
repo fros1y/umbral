@@ -59,7 +59,7 @@ conflict (LevelBuilder builder1) (LevelBuilder builder2) =
     intersect = Map.intersection builder1 builder2
 
 mergeLevelBuilder :: LevelBuilder -> GameState -> GameState
-mergeLevelBuilder builder state = addEntitiesToGame entities state
+mergeLevelBuilder builder state = addEntitiesToCurrLevel entities state
   where
     entities = mkEntitiesFrom builder
 

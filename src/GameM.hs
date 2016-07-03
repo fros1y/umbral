@@ -25,7 +25,7 @@ newtype GameM a = GameM
 getEntity :: EntityRef -> GameM (Maybe Entity)
 getEntity ref = do
     state <- ask
-    return $ IntMap.lookup ref (state ^. gameEntities)
+    return $ IntMap.lookup ref (state ^. (currLevel. gameEntities))
 
 traversableAt :: Coord -> GameM Bool
 traversableAt coord = do

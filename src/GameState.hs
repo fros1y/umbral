@@ -19,11 +19,18 @@ import Entity
 import ActorQueue
 import GameMap
 
+
+data LevelState = LevelState {
+  _gameEntities :: IntMap.IntMap Entity,
+  _bounding :: Bounds
+} deriving (Show, Generic)
+
+makeLenses ''LevelState
+
 data GameState = GameState
-    { _gameEntities :: IntMap.IntMap Entity
+    {  _currLevel :: LevelState
     , _actorQueue :: ActorQueue
     , _nextEntityRef :: Int
-    , _bounding :: Bounds
     , _entitiesByCoord :: Maybe EntityMap
     , _obstructionByCoord :: Maybe ObstructionMap
     , _visibleToPlayer :: Maybe VisibleMap
@@ -34,32 +41,35 @@ makeLenses ''GameState
 mkGameState :: Coord -> GameState
 mkGameState playerStart =
     GameState
-    { _gameEntities = entities
+    { _currLevel = level
     , _actorQueue = queue
     , _nextEntityRef = 2
-    , _bounding = (Bounds (Coord 0 0) (Coord 100 100)) -- FIXME
     , _entitiesByCoord = Nothing
     , _obstructionByCoord = Nothing
     , _visibleToPlayer = Nothing
     }
   where
+    level = LevelState {  _gameEntities = entities
+                        , _bounding = (Bounds (Coord 0 0) (Coord 100 100)) -- FIXME
+                      }
     player = (mkPlayer playerStart) & entityRef .~ 1
     entities = IntMap.singleton 1 player
     queue = DQ.fromList [1]
 
-buildMaps :: GameState -> (EntityMap, ObstructionMap)
-buildMaps state = (entityMap, obstructionMap) where
-  entities = allEntities state
-  bounds = traceShow (state ^. bounding) $ state ^. bounding
+buildMaps :: LevelState -> (EntityMap, ObstructionMap)
+buildMaps currLevel = (entityMap, obstructionMap) where
+  entities = levelEntities currLevel
+  bounds = currLevel ^. bounding
   entityMap = mkEntityMap bounds entities
   obstructionMap = mkObstructionMap entityMap
 
 mkNewEntityRef :: GameState -> (EntityRef, GameState)
 mkNewEntityRef state = (state ^. nextEntityRef, state & nextEntityRef +~ 1)
 
-addEntityToGame :: Entity -> GameState -> GameState
-addEntityToGame entity gameState =
-    gameState' & gameEntities %~ addEntity & actorQueue %~ addQueue
+addEntityToCurrLevel :: Entity -> GameState -> GameState
+addEntityToCurrLevel entity gameState =
+    gameState' & (currLevel . gameEntities) %~ addEntity
+               & actorQueue %~ addQueue
   where
     (ref,gameState') = mkNewEntityRef gameState
     entity' = entity & entityRef .~ ref
@@ -69,8 +79,8 @@ addEntityToGame entity gameState =
             then DQ.pushBack queue ref
             else queue
 
-addEntitiesToGame :: [Entity] -> GameState -> GameState
-addEntitiesToGame ents gameState = Prelude.foldr addEntityToGame gameState ents
+addEntitiesToCurrLevel :: [Entity] -> GameState -> GameState
+addEntitiesToCurrLevel ents gameState = Prelude.foldr addEntityToCurrLevel gameState ents
 
 instance Default GameState where
     def = mkGameState (Coord 1 1)
@@ -79,10 +89,10 @@ unsafeFromJust :: Lens' (Maybe a) a
 unsafeFromJust = anon (error "unsafeFromJust: Nothing") (const False)
 
 player :: Lens' GameState Entity
-player = gameEntities . (at 1) . unsafeFromJust
+player = currLevel . gameEntities . (at 1) . unsafeFromJust
 
 playerPosition :: Lens' GameState Coord
 playerPosition = player . position
 
-allEntities :: GameState -> [Entity]
-allEntities state = IntMap.elems (state ^. gameEntities)
+levelEntities :: LevelState -> [Entity]
+levelEntities currLevel = IntMap.elems (currLevel ^. gameEntities)
