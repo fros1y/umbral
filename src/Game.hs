@@ -37,7 +37,8 @@ import Serialize
 import Symbol
 import UI
 import Utils
-
+import GameMap
+import Data.Array
 
 data GameCommand
     = C_NOP
@@ -57,10 +58,18 @@ loadGame = do
     fileContents <- readFile filename
     return $ Aeson.decode (read fileContents)
 
+prepareMapsForState :: GameState -> GameState
+prepareMapsForState state = state { _entitiesByCoord = Just entityMap,
+                                    _obstructionByCoord = Just obstructionMap,
+                                    _visibleToPlayer = Just playerVisible
+                                } where
+    (entityMap, obstructionMap) = buildMaps state
+    playerVisible = mkVisibleMap (state ^. player) obstructionMap
+
 gameLoop :: DisplayContext -> GameState -> IO ()
 gameLoop display gameState = do
     (state',gameCommand) <-
-        Reader.runReaderT (runGame (gameStepM display)) gameState
+        Reader.runReaderT (runGame (gameStepM display)) (prepareMapsForState gameState)
     case gameCommand of
         Nothing -> gameLoop display state'
         Just C_NOP -> gameLoop display state'
@@ -76,20 +85,10 @@ gameLoop display gameState = do
         Just C_Quit -> return ()
 
 
-
--- data LevelLighting =
---
--- -- idea is that at the start of each loop, we can map out where the entities
--- -- are located, figure out lighting levels, even calculate visibilities
---
--- lightLevel :: GameM (LevelLighting)
--- lightLevel = undefined
-
 gameStepM :: DisplayContext -> GameM (GameState, Maybe GameCommand)
 gameStepM display = do
     state <- ask
-    visible <- getVisibleBy (state ^. player)
-    liftIO $ render display state visible
+    liftIO $ render display state (fromJust (state ^. visibleToPlayer))
     entityToRun <- firstInQueue
     if stillActive entityToRun
         then entityStepM display (fromJust entityToRun)

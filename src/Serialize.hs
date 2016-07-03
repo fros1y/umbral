@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Serialize where
 
@@ -16,6 +17,10 @@ import GameState
 instance ToJSON Coord
 
 instance FromJSON Coord
+
+instance ToJSON Bounds
+
+instance FromJSON Bounds
 
 instance ToJSON (Colour.Colour Double) where
     toJSON = toJSON . show
@@ -53,6 +58,21 @@ instance ToJSON Entity
 
 instance FromJSON Entity
 
-instance ToJSON GameState
+instance ToJSON GameState where
+    toJSON GameState{..} = object [
+        "gameEntities" .= _gameEntities,
+        "actorQueue" .= _actorQueue,
+        "nextEntityRef" .= _nextEntityRef,
+        "bounding" .= _bounding
+        ]
 
-instance FromJSON GameState
+instance FromJSON GameState where
+    parseJSON = withObject "gamestate" $ \o -> do
+        _gameEntities <- o .: "gameEntities"
+        _actorQueue <- o .: "actorQueue"
+        _nextEntityRef <- o .: "nextEntityRef"
+        _bounding <- o .: "bounding"
+        _entitiesByCoord <- return Nothing
+        _obstructionByCoord <- return Nothing
+        _visibleToPlayer <- return Nothing
+        return GameState{..}

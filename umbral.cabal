@@ -29,6 +29,7 @@ library
                       , Serialize
                       , Level
                       , Utils
+                      , GameMap
 
 
   build-depends:      base,
@@ -49,7 +50,7 @@ library
                       random-shuffle,
                       hfov,
                       array
-                      
+
   default-language:    Haskell2010
 
 executable umbral-exe

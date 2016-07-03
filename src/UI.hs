@@ -17,11 +17,13 @@ import           Data.Colour.SRGB    as Colour
 import           Control.Lens
 import Control.Category
 import Data.Default
+import Data.Array
 
 import Coord
 import Symbol
 import GameState
 import Entity
+import GameMap
 
 data DisplayContext = DisplayContext {
   _wnd   :: SFML.RenderWindow,
@@ -109,27 +111,15 @@ centerViewOn coord = do
   SFML.setView (?context ^. wnd) view
   return ()
 
-render :: DisplayContext -> GameState -> [Coord] -> IO ()
-render display state visibleCoords = let ?context = display in do
+render :: DisplayContext -> GameState -> VisibleMap -> IO ()
+render display state visibleMap = let ?context = display in do
     SFML.clearRenderWindow (display ^. wnd) $ SFML.Color 0 0 0 255
     centerViewOn (state ^. playerPosition)
-    let visible e = ((e ^. position) `elem` visibleCoords) || (isPlayerEntity e)
+    let visible e = (visibleMap <!> (e ^. position)) || (isPlayerEntity e)
         visibleEntities = filter visible (allEntities state)
-    mapM_ putEntity $ visibleEntities -- (state ^. player) state --(allEntities state)
+    mapM_ putEntity $ visibleEntities
     SFML.display (display ^. wnd)
 
--- visibleEntities :: Entity -> GameState -> [Entity]
--- visibleEntities fromEntity state = filter visible (allEntities state) where
---   visible e = inFOV fromEntity e state
-
-safeTail :: [a] -> [a]
-safeTail (x:xs) = xs
-safeTail _ = []
-
-inFOV :: Entity -> Entity -> GameState -> Bool
-inFOV from to state = not (any blocking los) where
-  los = safeTail $ segment (from^.position) (to^.position)
-  blocking coord = any isOpaque $ entitiesAt coord $ allEntities state
 -----
 data PlayerCommand  = Go Direction
                     | Pass

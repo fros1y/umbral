@@ -17,11 +17,16 @@ import Data.Maybe (fromJust, isJust, isNothing)
 import Coord
 import Entity
 import ActorQueue
+import GameMap
 
 data GameState = GameState
     { _gameEntities :: IntMap.IntMap Entity
     , _actorQueue :: ActorQueue
     , _nextEntityRef :: Int
+    , _bounding :: Bounds
+    , _entitiesByCoord :: Maybe EntityMap
+    , _obstructionByCoord :: Maybe ObstructionMap
+    , _visibleToPlayer :: Maybe VisibleMap
     } deriving (Show,Generic)
 
 makeLenses ''GameState
@@ -32,11 +37,22 @@ mkGameState playerStart =
     { _gameEntities = entities
     , _actorQueue = queue
     , _nextEntityRef = 2
+    , _bounding = (Bounds (Coord 0 0) (Coord 100 100)) -- FIXME
+    , _entitiesByCoord = Nothing
+    , _obstructionByCoord = Nothing
+    , _visibleToPlayer = Nothing
     }
   where
     player = (mkPlayer playerStart) & entityRef .~ 1
     entities = IntMap.singleton 1 player
     queue = DQ.fromList [1]
+
+buildMaps :: GameState -> (EntityMap, ObstructionMap)
+buildMaps state = (entityMap, obstructionMap) where
+  entities = allEntities state
+  bounds = traceShow (state ^. bounding) $ state ^. bounding
+  entityMap = mkEntityMap bounds entities
+  obstructionMap = mkObstructionMap entityMap
 
 mkNewEntityRef :: GameState -> (EntityRef, GameState)
 mkNewEntityRef state = (state ^. nextEntityRef, state & nextEntityRef +~ 1)
@@ -57,7 +73,7 @@ addEntitiesToGame :: [Entity] -> GameState -> GameState
 addEntitiesToGame ents gameState = Prelude.foldr addEntityToGame gameState ents
 
 instance Default GameState where
-    def = mkGameState (Coord 0 0)
+    def = mkGameState (Coord 1 1)
 
 unsafeFromJust :: Lens' (Maybe a) a
 unsafeFromJust = anon (error "unsafeFromJust: Nothing") (const False)
