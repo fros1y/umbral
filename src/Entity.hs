@@ -14,6 +14,7 @@ import GHC.Generics
 import Prelude hiding (Either(..), id, (.))
 import Coord
 import Symbol
+import Data.Monoid
 
 type EntityRef = Int
 
@@ -54,6 +55,18 @@ data Obstruction = Obstruction
 
 makeLenses ''Obstruction
 
+instance Monoid Obstruction where
+  mappend o0 o1 = Obstruction (o0 ^. traversable && o1 ^. traversable)
+                              (o0 ^. transparent && o1 ^. transparent)
+  mempty = Obstruction True True
+
+-- instance Monoid (Maybe Obstruction) where
+--   mappend Nothing (Just o) = Just o
+--   mappend (Just o) Nothing = Just o
+--   mappend Nothing Nothing = Nothing
+--   mappend (Just a) (Just b) = Just (a <> b)
+--   mempty = Nothing
+
 instance Default Obstruction where
     def =
         Obstruction
@@ -91,12 +104,6 @@ isPlayerEntity e =
     case e ^. actor of
         Nothing -> False
         Just a -> (a ^. strategy) == Player
-
-entitiesAt :: Coord -> [Entity] -> [Entity]
-entitiesAt coord entities = filter (entityAt coord) entities
-  where
-    entityAt :: Coord -> Entity -> Bool
-    entityAt coord e = (coord == e ^. position)
 
 isTraversable :: Entity -> Bool
 isTraversable e = maybe True checkTraversable (e ^. obstruction)
