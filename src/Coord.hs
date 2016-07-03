@@ -22,8 +22,8 @@ data Coord = Coord
 makeLenses ''Coord
 
 data Bounds = Bounds
-    { upper :: Coord
-    , lower :: Coord
+    { lower :: Coord
+    , upper :: Coord
     } deriving (Eq,Show,Read,Ord,Generic)
 
 instance Default Bounds where
@@ -60,6 +60,8 @@ toPair (Coord x y) = (fromInteger x, fromInteger y)
 fromPair :: Integral i => (i, i) -> Coord
 fromPair (x,y) = Coord (fromIntegral x) (fromIntegral y)
 
+boundsToPair :: Integral i => Bounds -> ((i, i), (i, i))
+boundsToPair bounds = ( toPair <<< lower $ bounds,  toPair <<< upper $ bounds)
 
 coordsWithin :: Bounds -> [Coord]
 coordsWithin (Bounds (Coord lx ly) (Coord ux uy)) =
