@@ -7,15 +7,15 @@
 -- Thanks to Greg McIntyre for the original C library to which this Haskell
 -- library binds. It can be found at <http://libfov.sourceforge.net/wiki>.
 module FOV (
-		Settings,
-		Shape(..),
-		Direction(..),
-		newSettings,    -- IO Settings
-		setShape,       -- Settings -> Shape -> IO ()
-		setOpaqueApply, -- Settings -> Bool -> IO ()
-		circle,
-		beam
-	) where
+    Settings,
+    Shape(..),
+    Direction(..),
+    newSettings,    -- IO Settings
+    setShape,       -- Settings -> Shape -> IO ()
+    setOpaqueApply, -- Settings -> Bool -> IO ()
+    circle,
+    beam
+  ) where
 
 import Foreign.Ptr
 import Foreign.ForeignPtr
@@ -35,16 +35,16 @@ newtype Settings = Settings (ForeignPtr SettingsRaw)
 
 -- | Shape of the field.
 data Shape
-	-- | Limit the field of view to a circle radius R by precalculating the
-	-- circle shape. This consumes memory at the rate of 4*(R+2) bytes per R
-	-- used in calls to fovCircle. Each radius is only calculated once.
-	= CirclePrecalculate
-	-- | Limit the field to a circle shape calculated on the fly.
-	| Circle
-	-- | Limit the field to an octagon with maximum radius R.
-	| Octagon
-	-- | Limit the field to an RxR square.
-	| Square
+  -- | Limit the field of view to a circle radius R by precalculating the
+  -- circle shape. This consumes memory at the rate of 4*(R+2) bytes per R
+  -- used in calls to fovCircle. Each radius is only calculated once.
+  = CirclePrecalculate
+  -- | Limit the field to a circle shape calculated on the fly.
+  | Circle
+  -- | Limit the field to an octagon with maximum radius R.
+  | Octagon
+  -- | Limit the field to an RxR square.
+  | Square
 
 data Direction = East | NorthEast | North | NorthWest | West | SouthWest | South | SouthEast
 
@@ -76,18 +76,18 @@ foreign import ccall fov_beam :: Ptr SettingsRaw -> Ptr map -> Ptr src -> Int ->
 -- | Create a new FOV settings structure.
 newSettings :: IO Settings
 newSettings = do
-	s <- new_fov_settings >>= newForeignPtr fov_settings_free
-	return $ Settings s
+  s <- new_fov_settings >>= newForeignPtr fov_settings_free
+  return $ Settings s
 
 -- | Set the shape of the field of view. The default is CirclePrecalculate.
 setShape :: Settings -> Shape -> IO ()
 setShape (Settings fps) sh = withForeignPtr fps $ \s -> do
-	fov_settings_set_shape s (rawshape sh)
+  fov_settings_set_shape s (rawshape sh)
 
 -- | Sets whether or not to apply lighting to opaque squares.
 setOpaqueApply :: Settings -> Bool -> IO ()
 setOpaqueApply (Settings fps) a = withForeignPtr fps $ \s -> do
-	fov_settings_set_opaque_apply s (if a then (#const FOV_OPAQUE_APPLY) else (#const FOV_OPAQUE_NOAPPLY))
+  fov_settings_set_opaque_apply s (if a then (#const FOV_OPAQUE_APPLY) else (#const FOV_OPAQUE_NOAPPLY))
 
 -- | Cast a 360 degree field of view.
 circle :: Settings                -- ^The FOV settings structure to use
@@ -97,9 +97,9 @@ circle :: Settings                -- ^The FOV settings structure to use
        -> (Int -> Int -> IO Bool) -- ^The function to determine the opacity of a certain cell
        -> IO ()
 circle (Settings fps) (x,y) r apply opaque = withForeignPtr fps $ \s -> do
-	fov_settings_set_apply_lighting_function s =<< mkApplyFn (\_ x' y' _ _ _ -> apply x' y')
-	fov_settings_set_opacity_test_function s =<< mkOpacityTestFn (\_ x' y' -> opaque x' y')
-	fov_circle s nullPtr nullPtr x y r
+  fov_settings_set_apply_lighting_function s =<< mkApplyFn (\_ x' y' _ _ _ -> apply x' y')
+  fov_settings_set_opacity_test_function s =<< mkOpacityTestFn (\_ x' y' -> opaque x' y')
+  fov_circle s nullPtr nullPtr x y r
 
 -- | Cast a beam.
 beam :: Settings                -- ^The FOV settings structure to use
@@ -111,6 +111,6 @@ beam :: Settings                -- ^The FOV settings structure to use
      -> (Int -> Int -> IO Bool) -- ^Opacity test function
      -> IO ()
 beam (Settings fps) (x,y) r dir angle apply opaque = withForeignPtr fps $ \s -> do
-	fov_settings_set_apply_lighting_function s =<< mkApplyFn (\_ x' y' _ _ _ -> apply x' y')
-	fov_settings_set_opacity_test_function s =<< mkOpacityTestFn (\_ x' y' -> opaque x' y')
-	fov_beam s nullPtr nullPtr x y r (rawdirection dir) angle
+  fov_settings_set_apply_lighting_function s =<< mkApplyFn (\_ x' y' _ _ _ -> apply x' y')
+  fov_settings_set_opacity_test_function s =<< mkOpacityTestFn (\_ x' y' -> opaque x' y')
+  fov_beam s nullPtr nullPtr x y r (rawdirection dir) angle
