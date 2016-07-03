@@ -10,6 +10,7 @@ import Coord
 import Entity
 import qualified Data.Array.IO as IOArray
 import qualified FOV as FOV
+import qualified Data.Array.Unsafe as Unsafe
 
 type CoordIndex = (Int, Int)
 
@@ -56,7 +57,7 @@ runFOV fromPos obstructionMap = do
       checkOpaque :: Int -> Int -> IO Bool
       checkOpaque x y = return $ not (transparentAt' obstructionMap (fromPair (x, y)))
   FOV.circle s (toPair fromPos) 999 makeVisible checkOpaque
-  visible' <- IOArray.freeze visible :: IO VisibleMap
+  visible' <- Unsafe.unsafeFreeze visible :: IO VisibleMap
   return visible'
 
 mapLookup' :: Maybe (GameMap a) -> Coord -> a
