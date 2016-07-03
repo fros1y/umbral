@@ -60,13 +60,6 @@ instance Monoid Obstruction where
                               (o0 ^. transparent && o1 ^. transparent)
   mempty = Obstruction True True
 
--- instance Monoid (Maybe Obstruction) where
---   mappend Nothing (Just o) = Just o
---   mappend (Just o) Nothing = Just o
---   mappend Nothing Nothing = Nothing
---   mappend (Just a) (Just b) = Just (a <> b)
---   mempty = Nothing
-
 instance Default Obstruction where
     def =
         Obstruction
