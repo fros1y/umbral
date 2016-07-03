@@ -1,10 +1,9 @@
 flags: {}
 extra-package-dbs: []
 packages:
-- '.'
-- location:
-    git: https://github.com/fros1y/hfov
-    commit: 7ffe43787401c363f6cf3d428457bfd224c48390
+- location: '.'
+-   location: vendor/hfov
+    extra-dep: true
 
 extra-deps:
 - DebugTraceHelpers-0.12
