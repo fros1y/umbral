@@ -4,17 +4,13 @@
 module Entity where
 
 import Control.Applicative
-import Control.Category
 import Control.Lens
 import Data.Default
-import Data.Maybe (fromJust, isJust, isNothing, listToMaybe)
-import Debug.Trace
-import Debug.Trace.Helpers
+import Data.Maybe (isJust)
 import GHC.Generics
 import Prelude hiding (Either(..), id, (.))
 import Coord
 import Symbol
-import Data.Monoid
 
 type EntityRef = Int
 
@@ -87,9 +83,8 @@ data Entity = Entity
 makeLenses ''Entity
 
 entityStrategy :: Entity -> Maybe Strategy
-entityStrategy e = getStrategy <$> getActor e
+entityStrategy e = getStrategy <$> (e ^. actor)
   where
-    getActor e = e ^. actor
     getStrategy a = a ^. strategy
 
 isPlayerEntity :: Entity -> Bool
@@ -106,7 +101,7 @@ isTraversable e = maybe True checkTraversable (e ^. obstruction)
 isOpaque :: Entity -> Bool
 isOpaque e = maybe False checkOpaque (e^.obstruction)
   where
-    checkOpaque op = not (op ^. transparent)
+    checkOpaque ob = not (ob ^. transparent)
 
 isAttackable :: Entity -> Bool
 isAttackable e = isJust (e ^. health)

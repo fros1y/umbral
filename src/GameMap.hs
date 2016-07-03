@@ -2,19 +2,14 @@ module GameMap where
 
 import Data.Array
 import Prelude hiding (Either(..), id, (.))
-import Control.Category
 import Data.Monoid
 import Control.Lens
 import Data.Maybe
 import System.IO.Unsafe
 import Coord
 import Entity
-import qualified Data.Array.IArray as IArray
 import qualified Data.Array.IO as IOArray
 import qualified FOV as FOV
-import Debug.Trace
-import Debug.Trace.Helpers
-import Utils
 
 type CoordIndex = (Int, Int)
 
@@ -25,7 +20,6 @@ type VisibleMap = GameMap Bool
 
 mkEntityMap :: Bounds -> [Entity] -> EntityMap
 mkEntityMap b entities = accumArray (<>) [] (boundsToPair b) placedEntities where
-  foo = traceShow placedEntities 1
   placedEntities = fmap (\e -> (toPair $ e ^. position, [e])) entities
 
 mkObstructionMap :: EntityMap -> ObstructionMap
@@ -42,9 +36,9 @@ transparentAt' :: ObstructionMap -> Coord -> Bool
 transparentAt' gameMap coord = (gameMap <!> coord) ^. transparent
 
 mkVisibleMap :: Entity -> ObstructionMap -> VisibleMap
-mkVisibleMap from obstructionMap = visibleMap where
+mkVisibleMap fromEntity obstructionMap = visibleMap where
   visibleMap = unsafePerformIO visibleMap'
-  visibleMap' = runFOV (from ^. position) obstructionMap
+  visibleMap' = runFOV (fromEntity ^. position) obstructionMap
 
 initFOV :: IO FOV.Settings
 initFOV = do
@@ -67,9 +61,13 @@ runFOV fromPos obstructionMap = do
 
 mapLookup' :: Maybe (GameMap a) -> Coord -> a
 mapLookup' (Just gameMap) coord = mapLookup gameMap coord
+mapLookup' Nothing _ = undefined
 
 mapLookup :: GameMap a -> Coord -> a
 mapLookup gameMap coord = (gameMap ! toPair coord)
 
+(<!>) :: GameMap a -> Coord -> a
 (<!>) = mapLookup
+
+(<!!>) :: Maybe (GameMap a) -> Coord -> a
 (<!!>) = mapLookup'

@@ -1,11 +1,8 @@
 module ActorQueue where
 
-import Control.Applicative
 import Control.Category
 import Control.Lens
 import qualified Data.Dequeue as DQ
-import Debug.Trace
-import Debug.Trace.Helpers
 import Prelude hiding (Either(..), id, (.))
 import Entity
 
@@ -15,7 +12,7 @@ dropFront :: ActorQueue -> ActorQueue
 dropFront queue =
     case DQ.popFront queue of
         Nothing -> DQ.empty
-        Just (a,q) -> q
+        Just (_ ,q) -> q
 
 rotate :: ActorQueue -> ActorQueue
 rotate queue = queueChoice
@@ -25,7 +22,7 @@ rotate queue = queueChoice
         return $ DQ.pushBack queue' exiting
     queueChoice =
         case potentialQ of
-            Nothing -> traceMsg "queue was empty?" queue
+            Nothing -> queue
             (Just q) -> q
 
 actionPointsOfEntity :: Maybe Entity -> Maybe Int

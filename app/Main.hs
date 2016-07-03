@@ -1,15 +1,13 @@
 module Main where
 
 import Prelude hiding (Either(..), id, (.))
-import Control.Applicative
-import Control.Category
+
 import Game
-import Coord
-import Entity
-import GameState
 import UI
 import Level
+import GameState
 
+gameState :: GameState
 gameState = mkLevel
 
 main :: IO ()

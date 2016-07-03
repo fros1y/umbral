@@ -3,7 +3,6 @@
 
 module Symbol where
 
-import Control.Category
 import Control.Lens
 import Data.Colour as Colour
 import Data.Colour.Names as Colour

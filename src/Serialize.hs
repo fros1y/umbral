@@ -5,9 +5,7 @@
 module Serialize where
 
 import Data.Aeson
-import GHC.Generics
 import Data.Colour as Colour
-import Data.Colour.Names as Colour
 import Data.Dequeue
 import Coord
 import Entity

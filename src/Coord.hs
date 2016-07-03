@@ -10,13 +10,12 @@ import Control.Category
 import Data.Default
 import Control.Lens
 import Data.Map.Strict as Map
-import Data.IntMap.Strict as IntMap
 import qualified System.Random.Shuffle as Random
 import Control.Monad
 
 data Coord = Coord
-    { _x :: Integer
-    , _y :: Integer
+    { __x :: Integer
+    , __y :: Integer
     } deriving (Eq,Show,Read,Ord,Generic)
 
 makeLenses ''Coord
@@ -79,7 +78,7 @@ borderCoords (Bounds (Coord lx ly) (Coord ux uy)) =
 between
     :: (Ord a)
     => a -> a -> a -> Bool
-between test lower upper = test >= lower && test < upper
+between test l u = test >= l && test < u
 
 within :: Coord -> Bounds -> Bool
 within (Coord cx cy) (Bounds (Coord lx ly) (Coord ux uy)) = withinX && withinY
@@ -148,8 +147,8 @@ randomDeltas =
         | xs <- [-1, 0, 1]
         , ys <- [-1, 0, 1] ]
 
-distance :: Floating a => Coord -> Coord -> a
-distance (Coord x0 y0) (Coord x1 y1) = sqrt $ fromIntegral ((x1 - x0)^2 + (y1 - y0)^2)
+distance :: Coord -> Coord -> Double
+distance (Coord x0 y0) (Coord x1 y1) = sqrt $ fromIntegral ((x1 - x0)^(2 :: Integer) + (y1 - y0)^(2 :: Integer))
 
 line :: Coord -> Coord -> [Coord]
 line c0 c1 = fromPair <$> line' (toPair c0) (toPair c1)
@@ -165,7 +164,7 @@ circleCoords r center = fmap (+ center) $ do
   return (Coord x y)
 
 line' :: (Int, Int) -> (Int, Int) -> [(Int, Int)]
-line' p1@(x0, y0) (x1, y1) =
+line' (x0, y0) (x1, y1) =
     let (dx, dy) = (x1 - x0, y1 - y0)
         xyStep b (x, y) = (x + signum dx,     y + signum dy * b)
         yxStep b (x, y) = (x + signum dx * b, y + signum dy)

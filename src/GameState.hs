@@ -3,17 +3,14 @@
 
 module GameState where
 
-import Debug.Trace
-import Debug.Trace.Helpers
 import Prelude hiding (Either(..), id, (.))
-import Control.Applicative
 import Control.Category
 import GHC.Generics
 import Control.Lens
 import qualified Data.IntMap.Strict as IntMap
 import Data.Default
 import qualified Data.Dequeue as DQ
-import Data.Maybe (fromJust, isJust, isNothing)
+import Data.Maybe (isJust)
 import Coord
 import Entity
 import ActorQueue
@@ -52,14 +49,14 @@ mkGameState playerStart =
     level = LevelState {  _gameEntities = entities
                         , _bounding = (Bounds (Coord 0 0) (Coord 100 100)) -- FIXME
                       }
-    player = (mkPlayer playerStart) & entityRef .~ 1
-    entities = IntMap.singleton 1 player
+    playerE = (mkPlayer playerStart) & entityRef .~ 1
+    entities = IntMap.singleton 1 playerE
     queue = DQ.fromList [1]
 
 buildMaps :: LevelState -> (EntityMap, ObstructionMap)
-buildMaps currLevel = (entityMap, obstructionMap) where
-  entities = levelEntities currLevel
-  bounds = currLevel ^. bounding
+buildMaps level = (entityMap, obstructionMap) where
+  entities = levelEntities level
+  bounds = level ^. bounding
   entityMap = mkEntityMap bounds entities
   obstructionMap = mkObstructionMap entityMap
 
@@ -95,4 +92,4 @@ playerPosition :: Lens' GameState Coord
 playerPosition = player . position
 
 levelEntities :: LevelState -> [Entity]
-levelEntities currLevel = IntMap.elems (currLevel ^. gameEntities)
+levelEntities level = IntMap.elems (level ^. gameEntities)

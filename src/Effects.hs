@@ -7,8 +7,6 @@ import Control.Category
 import Control.Lens
 import Control.Monad.Reader as Reader
 import qualified Data.IntMap.Strict as IntMap
-import Debug.Trace
-import Debug.Trace.Helpers
 import GHC.Generics
 import Prelude hiding (Either(..), id, (.))
 import Coord
@@ -63,9 +61,9 @@ applyEffects :: EntityRef -> [Effect] -> Entity -> Maybe Entity
 applyEffects _ effects e = foldr applyEffect (Just e) effects
 
 applyEffect :: Effect -> Maybe Entity -> Maybe Entity
-applyEffect EffDestroy e = Nothing
+applyEffect EffDestroy _ = Nothing
 applyEffect EffRecoverAP e = pure recoverAP <*> e
-applyEffect (EffSpendAP ap) e = spendAP <$> e <*> pure ap
+applyEffect (EffSpendAP a) e = spendAP <$> e <*> pure a
 applyEffect (EffDamaged dmg) e = do
     e' <- applyDamage <$> e <*> pure dmg
     if isDead e'
