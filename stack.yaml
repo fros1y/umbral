@@ -2,8 +2,6 @@ flags: {}
 extra-package-dbs: []
 packages:
 - location: '.'
--   location: vendor/hfov
-    extra-dep: true
 
 extra-deps:
 - DebugTraceHelpers-0.12

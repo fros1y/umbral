@@ -10,7 +10,6 @@ import Control.Category
 import Control.Concurrent
 import Control.Lens
 import Control.Monad (when)
-import FOV as FOV
 import qualified Control.Monad.Loops as L
 import qualified Control.Monad.Random as Random
 import Control.Monad.Reader as Reader

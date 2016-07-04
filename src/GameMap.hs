@@ -10,7 +10,6 @@ import Coord
 import Entity
 import Control.Monad
 import qualified Data.Array.IO as IOArray
-import qualified FOV as FOV
 import qualified Data.Array.Unsafe as Unsafe
 import qualified TCOD as TCOD
 
