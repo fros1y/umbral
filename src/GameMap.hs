@@ -8,9 +8,12 @@ import Data.Maybe
 import System.IO.Unsafe
 import Coord
 import Entity
+import Control.Monad
 import qualified Data.Array.IO as IOArray
 import qualified FOV as FOV
 import qualified Data.Array.Unsafe as Unsafe
+import qualified TCOD as TCOD
+
 
 type CoordIndex = (Int, Int)
 
@@ -41,22 +44,27 @@ mkVisibleMap fromEntity obstructionMap = visibleMap where
   visibleMap = unsafePerformIO visibleMap'
   visibleMap' = runFOV (fromEntity ^. position) obstructionMap
 
-initFOV :: IO FOV.Settings
-initFOV = do
-    settings <- FOV.newSettings
-    FOV.setShape settings FOV.Circle
-    FOV.setOpaqueApply settings True
-    return settings
+buildTCODMap :: ObstructionMap -> IO TCOD.TCODMap
+buildTCODMap obstructionMap = do
+  let (_, (xSize, ySize)) = bounds obstructionMap
+  tcodMap <- TCOD.newMap xSize ySize
+  forM_ (Data.Array.indices obstructionMap) $ \(x, y) -> do
+      let transp = (obstructionMap ! (x,y)) ^. transparent
+          walkable = (obstructionMap ! (x,y)) ^. traversable
+      TCOD.setGrid tcodMap x y transp walkable
+  return tcodMap
 
 runFOV :: Coord -> ObstructionMap -> IO VisibleMap
 runFOV fromPos obstructionMap = do
-  s <- initFOV
+  let (xPos, yPos) = toPair fromPos
+  tcodMap <- buildTCODMap obstructionMap
+  TCOD.computeFOVFrom tcodMap xPos yPos 0 True
+
   visible <- IOArray.newArray (bounds obstructionMap) False :: IO (IOArray.IOUArray CoordIndex Bool)
-  let makeVisible :: Int -> Int -> IO ()
-      makeVisible x y = IOArray.writeArray visible (x, y) True
-      checkOpaque :: Int -> Int -> IO Bool
-      checkOpaque x y = return $ not (transparentAt' obstructionMap (fromPair (x, y)))
-  FOV.circle s (toPair fromPos) 999 makeVisible checkOpaque
+  forM_ (Data.Array.indices obstructionMap) $ \(x, y) -> do
+    inField <- TCOD.inFOV tcodMap x y
+    when inField $ IOArray.writeArray visible (x, y) True
+
   visible' <- Unsafe.unsafeFreeze visible :: IO VisibleMap
   return visible'
 
