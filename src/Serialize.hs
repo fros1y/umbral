@@ -5,12 +5,13 @@
 module Serialize where
 
 import Data.Aeson
-import Data.Colour as Colour
 import Data.Dequeue
 import Coord
 import Entity
 import Symbol
 import GameState
+import Lighting
+import qualified Color as Color
 
 instance ToJSON Coord
 
@@ -20,11 +21,8 @@ instance ToJSON Bounds
 
 instance FromJSON Bounds
 
-instance ToJSON (Colour.Colour Double) where
-    toJSON = toJSON . show
-
-instance FromJSON (Colour.Colour Double) where
-    parseJSON = fmap read . parseJSON
+instance ToJSON Color.Color
+instance FromJSON Color.Color
 
 instance (Show a) => ToJSON (Data.Dequeue.BankersDequeue a) where
     toJSON = toJSON . show
@@ -58,6 +56,9 @@ instance FromJSON Entity
 
 instance ToJSON LevelState
 instance FromJSON LevelState
+
+instance ToJSON LightSource
+instance FromJSON LightSource
 
 instance ToJSON GameState where
     toJSON GameState{..} = object [
