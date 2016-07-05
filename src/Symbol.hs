@@ -4,8 +4,7 @@
 module Symbol where
 
 import Control.Lens
-import Data.Colour as Colour
-import Data.Colour.Names as Colour
+import qualified Color as Color
 import Data.Default
 import GHC.Generics
 import Prelude hiding (Either(..), id, (.))
@@ -13,10 +12,10 @@ import Prelude hiding (Either(..), id, (.))
 -- Symbol
 data Symbol = Symbol
     { _glyph :: Char
-    , _baseColor :: Colour.Colour Double
+    , _baseColor :: Color.Color
     } deriving (Generic,Show)
 
 makeLenses ''Symbol
 
 instance Default Symbol where
-    def = Symbol '?' Colour.white
+    def = Symbol '?' $ Color.byName "white"

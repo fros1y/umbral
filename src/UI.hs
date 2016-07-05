@@ -11,14 +11,12 @@ import           GHC.Generics
 import           Prelude              hiding (Either (..), id, (.))
 import qualified SFML.Graphics       as SFML
 import qualified SFML.Window         as SFML
-import           Data.Colour         as Colour
-import           Data.Colour.Names   as Colour
-import           Data.Colour.SRGB    as Colour
 import           Control.Lens
 import Control.Category
 import Data.Default
 import Data.Array
 
+import qualified Color as Color
 import Coord
 import Symbol
 import GameState
@@ -58,9 +56,11 @@ handleResize w h = do
   SFML.setView (?context ^. wnd) view
   return ()
 
-convertColourToSFML :: Colour.Colour Double -> SFML.Color
-convertColourToSFML c = SFML.Color r g b 255 where
-  Colour.RGB r g b = Colour.toSRGB24 c
+convertColorToSFML :: Color.Color -> SFML.Color
+convertColorToSFML (Color.Color r g b) = SFML.Color r' g' b' 255 where
+  r' = fromIntegral r
+  g' = fromIntegral g
+  b' = fromIntegral b
 
 fontSize = 20 -- FIXME
 
@@ -94,7 +94,7 @@ putSymbol coord symbol = do
   SFML.setTextStringU txt [t]
   SFML.setTextFont txt (?context ^. fnt)
   SFML.setTextCharacterSize txt fontSize
-  SFML.setTextColor txt $ convertColourToSFML c
+  SFML.setTextColor txt $ convertColorToSFML c
   SFML.setPosition txt v
   SFML.drawText (?context ^. wnd) txt (Just SFML.renderStates)
   SFML.destroy txt

@@ -9,8 +9,12 @@ import Data.Default
 import Data.Maybe (isJust)
 import GHC.Generics
 import Prelude hiding (Either(..), id, (.))
+import qualified Color as Color
+
 import Coord
 import Symbol
+import Lighting
+
 
 type EntityRef = Int
 
@@ -78,6 +82,7 @@ data Entity = Entity
     , _health :: Maybe Health
     , _actor :: Maybe Actor
     , _obstruction :: Maybe Obstruction
+    , _lightSource :: Maybe LightSource
     } deriving (Show,Generic)
 
 makeLenses ''Entity
@@ -121,11 +126,14 @@ mkBaseEntity coord sym =
     , _health = Nothing
     , _actor = Nothing
     , _obstruction = Just def
+    , _lightSource = Nothing
     }
 
 mkPlayer :: Coord -> Entity
 mkPlayer coord =
-    baseEntity & health .~ Just (mkHealth 100) & actor .~ Just (mkActor Player)
+    baseEntity  & health .~ Just (mkHealth 100)
+                & actor .~ Just (mkActor Player)
+                & lightSource .~ Just (LightSource 5 (Color.byName "yellow"))
   where
     baseEntity = mkBaseEntity coord sym
     sym = def & glyph .~ '@'
