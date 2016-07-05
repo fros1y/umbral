@@ -147,6 +147,9 @@ randomDeltas =
         | xs <- [-1, 0, 1]
         , ys <- [-1, 0, 1] ]
 
+pairDistance :: (Int, Int) -> (Int, Int) -> Double
+pairDistance (x0, y0) (x1, y1) = sqrt $ fromIntegral ((x1 - x0)^(2 :: Integer) + (y1 - y0)^(2 :: Integer))
+
 distance :: Coord -> Coord -> Double
 distance (Coord x0 y0) (Coord x1 y1) = sqrt $ fromIntegral ((x1 - x0)^(2 :: Integer) + (y1 - y0)^(2 :: Integer))
 
