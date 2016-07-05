@@ -32,6 +32,8 @@ library
                       , Utils
                       , GameMap
                       , TCOD
+                      , Lighting
+                      , Color
 
 
   build-depends:      base,
@@ -43,7 +45,6 @@ library
                       mtl,
                       data-default,
                       SFML,
-                      colour,
                       dequeue,
                       DebugTraceHelpers,
                       monad-loops,
