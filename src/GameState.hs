@@ -18,8 +18,9 @@ import GameMap
 
 
 data LevelState = LevelState {
-  _gameEntities :: IntMap.IntMap Entity,
-  _bounding :: Bounds
+    _gameEntities :: IntMap.IntMap Entity
+  , _bounding :: Bounds
+  , _cachedMap :: Maybe CachedMap
 } deriving (Show, Generic)
 
 makeLenses ''LevelState
@@ -28,9 +29,6 @@ data GameState = GameState
     {  _currLevel :: LevelState
     , _actorQueue :: ActorQueue
     , _nextEntityRef :: Int
-    , _entitiesByCoord :: Maybe EntityMap
-    , _obstructionByCoord :: Maybe ObstructionMap
-    , _visibleToPlayer :: Maybe VisibleMap
     } deriving (Show,Generic)
 
 makeLenses ''GameState
@@ -41,24 +39,27 @@ mkGameState playerStart =
     { _currLevel = level
     , _actorQueue = queue
     , _nextEntityRef = 2
-    , _entitiesByCoord = Nothing
-    , _obstructionByCoord = Nothing
-    , _visibleToPlayer = Nothing
     }
   where
     level = LevelState {  _gameEntities = entities
                         , _bounding = (Bounds (Coord 0 0) (Coord 100 100)) -- FIXME
+                        , _cachedMap = Nothing
                       }
     playerE = (mkPlayer playerStart) & entityRef .~ 1
     entities = IntMap.singleton 1 playerE
     queue = DQ.fromList [1]
 
-buildMaps :: LevelState -> (EntityMap, ObstructionMap)
-buildMaps level = (entityMap, obstructionMap) where
-  entities = levelEntities level
-  bounds = level ^. bounding
-  entityMap = mkEntityMap bounds entities
+buildMaps :: LevelState -> LevelState
+buildMaps level = level {_cachedMap = Just cachedMap'} where
+  cachedMap' = buildCachedMap level
+
+buildCachedMap :: LevelState -> CachedMap
+buildCachedMap levelState = CachedMap entityMap obstructionMap tcodMap lightMap where
+  levelBounds = (levelState ^. bounding)
+  entityMap = mkEntityMap levelBounds (levelEntities levelState)
   obstructionMap = mkObstructionMap entityMap
+  tcodMap = mkTCODMap obstructionMap
+  lightMap = undefined
 
 mkNewEntityRef :: GameState -> (EntityRef, GameState)
 mkNewEntityRef state = (state ^. nextEntityRef, state & nextEntityRef +~ 1)

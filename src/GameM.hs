@@ -9,6 +9,7 @@ import qualified Control.Monad.Random as Random
 import Control.Monad.Reader as Reader
 import qualified Control.Monad.State as State
 import qualified Data.IntMap.Strict as IntMap
+import Data.Maybe (fromJust)
 
 
 import Prelude hiding (Either(..), id, (.))
@@ -27,17 +28,21 @@ getEntity ref = do
     state <- ask
     return $ IntMap.lookup ref (state ^. (currLevel. gameEntities))
 
+unsafeGetCachedMap :: GameState -> CachedMap
+unsafeGetCachedMap gameState = fromJust cachedMap' where
+    cachedMap' = gameState ^. (currLevel . cachedMap)
+
 traversableAt :: Coord -> GameM Bool
 traversableAt coord = do
     state <- ask
-    let gameMap = state ^. obstructionByCoord
-    return $ (gameMap <!!> coord) ^. traversable
+    let gameMap = (unsafeGetCachedMap state) ^. obstructionMap
+    return $ (gameMap <!> coord) ^. traversable
 
 transparentAt :: Coord -> GameM Bool
 transparentAt coord = do
     state <- ask
-    let gameMap = state ^. obstructionByCoord
-    return $ (gameMap <!!> coord) ^. transparent
+    let gameMap = (unsafeGetCachedMap state) ^. obstructionMap
+    return $ (gameMap <!> coord) ^. transparent
 
 opaqueAt :: Coord -> GameM Bool
 opaqueAt coord = not <$> transparentAt coord
@@ -65,4 +70,4 @@ getDeltaTowardsPlayer entity = do
 entitiesAt :: Coord -> GameM [Entity]
 entitiesAt coord = do
     state <- ask
-    return $ (state ^. entitiesByCoord) <!!> coord
+    return $ ((unsafeGetCachedMap state) ^. entityMap) <!> coord

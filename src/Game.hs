@@ -57,18 +57,10 @@ loadGame = do
     fileContents <- readFile filename
     return $ Aeson.decode (read fileContents)
 
-prepareMapsForState :: GameState -> GameState
-prepareMapsForState state = state { _entitiesByCoord = Just entityMap,
-                                    _obstructionByCoord = Just obstructionMap,
-                                    _visibleToPlayer = Just playerVisible
-                                } where
-    (entityMap, obstructionMap) = buildMaps (state ^. currLevel)
-    playerVisible = mkVisibleMap (state ^. player) obstructionMap
-
 gameLoop :: DisplayContext -> GameState -> IO ()
 gameLoop display gameState = do
     (state',gameCommand) <-
-        Reader.runReaderT (runGame (gameStepM display)) (prepareMapsForState gameState)
+        Reader.runReaderT (runGame (gameStepM display)) (gameState & currLevel %~ buildMaps)
     case gameCommand of
         Nothing -> gameLoop display state'
         Just C_NOP -> gameLoop display state'
@@ -87,7 +79,8 @@ gameLoop display gameState = do
 gameStepM :: DisplayContext -> GameM (GameState, Maybe GameCommand)
 gameStepM display = do
     state <- ask
-    liftIO $ render display state (fromJust (state ^. visibleToPlayer))
+    let playerVis = mkVisibleMap (state ^. player) (fromJust (state ^. (currLevel . cachedMap)))
+    liftIO $ render display state playerVis
     entityToRun <- firstInQueue
     if stillActive entityToRun
         then entityStepM display (fromJust entityToRun)
