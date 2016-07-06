@@ -51,7 +51,8 @@ library
                       SFML,
                       aeson,
                       random-shuffle,
-                      array
+                      array,
+                      semigroups
 
   default-language:    Haskell2010
   extra-libraries:     tcod

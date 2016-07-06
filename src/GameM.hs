@@ -35,13 +35,13 @@ unsafeGetCachedMap gameState = fromJust cachedMap' where
 traversableAt :: Coord -> GameM Bool
 traversableAt coord = do
     state <- ask
-    let gameMap = (unsafeGetCachedMap state) ^. obstructionMap
+    let gameMap = unpackObstructionMap $ (unsafeGetCachedMap state) ^. obstructionMap
     return $ (gameMap <!> coord) ^. traversable
 
 transparentAt :: Coord -> GameM Bool
 transparentAt coord = do
     state <- ask
-    let gameMap = (unsafeGetCachedMap state) ^. obstructionMap
+    let gameMap = unpackObstructionMap $ (unsafeGetCachedMap state) ^. obstructionMap
     return $ (gameMap <!> coord) ^. transparent
 
 opaqueAt :: Coord -> GameM Bool
@@ -70,4 +70,4 @@ getDeltaTowardsPlayer entity = do
 entitiesAt :: Coord -> GameM [Entity]
 entitiesAt coord = do
     state <- ask
-    return $ ((unsafeGetCachedMap state) ^. entityMap) <!> coord
+    return $ (unpackEntityMap $ (unsafeGetCachedMap state) ^. entityMap) <!> coord

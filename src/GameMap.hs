@@ -10,6 +10,8 @@ import Prelude hiding (Either(..), id, (.))
 import Data.Monoid
 import Control.Lens
 import Data.Maybe
+import qualified Data.Semigroup as Semigroup
+
 import System.IO.Unsafe
 import Coord
 import Entity
@@ -22,10 +24,18 @@ import Lighting
 type CoordIndex = (Int, Int)
 
 type GameMap a = Array CoordIndex a
-type EntityMap = GameMap [Entity]
-type ObstructionMap = GameMap Obstruction
-type VisibleMap = GameMap Bool
-type LightMap = GameMap LightLevel
+newtype EntityMap = EntityMap {unpackEntityMap :: (GameMap [Entity])} deriving (Generic)
+newtype ObstructionMap = ObstructionMap {unpackObstructionMap :: (GameMap Obstruction)} deriving (Generic)
+newtype VisibleMap = VisibleMap {unpackVisibleMap :: (GameMap Bool)} deriving (Generic)
+newtype LightMap = LightMap {unpackLightMap :: (GameMap LightLevel)} deriving (Generic)
+
+
+instance Semigroup.Semigroup LightMap where
+  (<>) (LightMap m1) (LightMap m2) = LightMap $ accumArray (<>) mempty (bounds m1) ((assocs m1) ++ (assocs m2))
+
+instance SemiGroup.SemiGroup ObstructionMap where
+  (<>) (ObstructionMap m1) (ObstructionMap m2) = ObstructionMap $ accumArray (<>) mempty (bounds m1) ((assocs m1) ++ (assocs m2))
+
 
 data CachedMap = CachedMap {
   _entityMap :: EntityMap,
@@ -40,33 +50,30 @@ instance Show CachedMap where
 makeLenses ''CachedMap
 
 mkEntityMap :: Bounds -> [Entity] -> EntityMap
-mkEntityMap b entities = accumArray (<>) [] (boundsToPair b) placedEntities where
+mkEntityMap b entities = EntityMap $ accumArray (<>) [] (boundsToPair b) placedEntities where
   placedEntities = fmap (\e -> (toPair $ e ^. position, [e])) entities
 
 mkObstructionMap :: EntityMap -> ObstructionMap
-mkObstructionMap entityMap = (determineObstructions <$> entityMap) where
+mkObstructionMap (EntityMap entityMap) = ObstructionMap (determineObstructions <$> entityMap) where
   determineObstructions :: [Entity] -> Obstruction
   determineObstructions entities = fromMaybe (Obstruction True True) (checkEntities entities)
   checkEntities :: [Entity] -> Maybe Obstruction
   checkEntities entities = mconcat $ (\e -> e ^. obstruction) <$> entities
 
-combineLightMaps :: LightMap -> LightMap -> LightMap
-combineLightMaps m1 m2 = accumArray (<>) mempty (bounds m1) ((assocs m1) ++ (assocs m2))
-
 traversableAt' :: ObstructionMap -> Coord -> Bool
-traversableAt' gameMap coord = (gameMap <!> coord) ^. traversable
+traversableAt' (ObstructionMap gameMap) coord = (gameMap <!> coord) ^. traversable
 
 transparentAt' :: ObstructionMap -> Coord -> Bool
-transparentAt' gameMap coord = (gameMap <!> coord) ^. transparent
+transparentAt' (ObstructionMap gameMap) coord = (gameMap <!> coord) ^. transparent
 
 mkVisibleMap :: Entity -> CachedMap -> VisibleMap
 mkVisibleMap fromEntity cachedMap = runFOV (fromEntity ^. position) size' tcodMap' where
-  size' = bounds (cachedMap ^. obstructionMap)
+  size' = bounds $ unpackObstructionMap (cachedMap ^. obstructionMap)
   tcodMap' = cachedMap ^. tcodMap
 
 {- NOINLINE buildTCODMap -}
 mkTCODMap :: ObstructionMap -> TCOD.TCODMap
-mkTCODMap obstructionMap = unsafePerformIO $ do
+mkTCODMap (ObstructionMap obstructionMap) = unsafePerformIO $ do
   let (_, (xSize, ySize)) = bounds obstructionMap
   tcodMap <- TCOD.newMap xSize ySize
   forM_ (Data.Array.indices obstructionMap) $ \(x, y) -> do
@@ -83,7 +90,7 @@ indexList ((lx, ly), (ux, uy)) = do
 
 {- NOINLINE runFOV -}
 runFOV :: Coord -> (CoordIndex, CoordIndex) -> TCOD.TCODMap -> VisibleMap
-runFOV fromPos mapBounds tcodMap = unsafePerformIO $ do
+runFOV fromPos mapBounds tcodMap = VisibleMap $ unsafePerformIO $ do
   let (xPos, yPos) = toPair fromPos
   TCOD.computeFOVFrom tcodMap xPos yPos 0 True
 
@@ -92,19 +99,22 @@ runFOV fromPos mapBounds tcodMap = unsafePerformIO $ do
     inField <- TCOD.inFOV tcodMap x y
     when inField $ IOArray.writeArray visible (x, y) True
 
-  visible' <- Unsafe.unsafeFreeze visible :: IO VisibleMap
+  visible' <- Unsafe.unsafeFreeze visible
   return visible'
+
+
+
 
 {- NOINLINE mkLightMapFromEntitySource -}
 mkLightMapFromEntitySource :: Coord -> LightSource -> VisibleMap -> LightMap
-mkLightMapFromEntitySource pos source visibleMap = unsafePerformIO $ do
+mkLightMapFromEntitySource pos source (VisibleMap visibleMap) = LightMap $ unsafePerformIO $ do
   let posPair = toPair pos
   lighting <- IOArray.newArray (bounds visibleMap) mempty :: IO (IOArray.IOArray CoordIndex LightLevel)
   forM_ (indexList $ bounds visibleMap) $ \(x, y) -> do
     when (visibleMap ! (x,y)) $
       IOArray.writeArray lighting (x, y) $
         castLight source (pairDistance posPair (x,y))
-  lighting' <- Unsafe.unsafeFreeze lighting :: IO LightMap
+  lighting' <- Unsafe.unsafeFreeze lighting
   return lighting'
 
 mapLookup' :: Maybe (GameMap a) -> Coord -> a

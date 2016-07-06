@@ -115,7 +115,7 @@ render :: DisplayContext -> GameState -> VisibleMap -> IO ()
 render display state visibleMap = let ?context = display in do
     SFML.clearRenderWindow (display ^. wnd) $ SFML.Color 0 0 0 255
     centerViewOn (state ^. playerPosition)
-    let visible e = (visibleMap <!> (e ^. position)) || (isPlayerEntity e)
+    let visible e = ((unpackVisibleMap visibleMap) <!> (e ^. position)) || (isPlayerEntity e)
         visibleEntities = filter visible (levelEntities (state ^. currLevel))
     mapM_ putEntity $ visibleEntities
     SFML.display (display ^. wnd)
