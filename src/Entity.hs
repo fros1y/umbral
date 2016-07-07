@@ -166,7 +166,7 @@ mkWall coord = baseEntity
 mkFloor :: Coord -> Entity
 mkFloor coord = baseEntity & obstruction .~ Nothing
   where
-    sym = def & glyph .~ '.'
+    sym = def & glyph .~ '⋅'
     baseEntity = mkBaseEntity coord sym
 
 addLight :: LightSource -> Entity -> Entity
