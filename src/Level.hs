@@ -17,6 +17,7 @@ import GameState
 data Tile
     = Floor
     | Wall
+    | LitColumn
     deriving (Show,Eq)
 
 instance Monoid Tile where
@@ -69,8 +70,9 @@ mkEntitiesFrom (LevelBuilder builder) = fmap mkEntityFrom (toList builder)
 mkEntityFrom :: (Coord, Tile) -> Entity
 mkEntityFrom (coord,Wall) = mkWall coord
 mkEntityFrom (coord,Floor) = mkFloor coord
+mkEntityFrom (coord,LitColumn) = mkLitColumn coord
 
 mkLevel :: GameState
 mkLevel = mergeLevelBuilder level $ mkGameState (Coord 15 10)
   where
-    level = mkRoom (Bounds (Coord 0 0) (Coord 30 20)) <> mkTiles Wall [Coord 5 5, Coord 11 9]
+    level = mkRoom (Bounds (Coord 0 0) (Coord 30 20)) <> mkTiles LitColumn [Coord 5 5, Coord 11 9]

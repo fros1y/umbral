@@ -117,6 +117,10 @@ isDead e =
         Nothing -> False
         (Just hp) -> hp ^. currHP <= 0
 
+
+isLightSource :: Entity -> Bool
+isLightSource e = isJust (e ^. lightSource)
+
 mkBaseEntity :: Coord -> Symbol -> Entity
 mkBaseEntity coord sym =
     Entity
@@ -164,3 +168,9 @@ mkFloor coord = baseEntity & obstruction .~ Nothing
   where
     sym = def & glyph .~ '.'
     baseEntity = mkBaseEntity coord sym
+
+addLight :: LightSource -> Entity -> Entity
+addLight light e = e & lightSource .~ Just light
+
+mkLitColumn :: Coord -> Entity
+mkLitColumn coord = addLight (LightSource 1 $ Color.byName "blue") (mkWall coord)

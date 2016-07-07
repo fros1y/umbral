@@ -11,6 +11,7 @@ import Data.Monoid
 import Control.Lens
 import Data.Maybe
 import qualified Data.Semigroup as Semigroup
+import qualified Data.List.NonEmpty as NonEmpty
 
 import System.IO.Unsafe
 import Coord
@@ -33,7 +34,7 @@ newtype LightMap = LightMap {unpackLightMap :: (GameMap LightLevel)} deriving (G
 instance Semigroup.Semigroup LightMap where
   (<>) (LightMap m1) (LightMap m2) = LightMap $ accumArray (<>) mempty (bounds m1) ((assocs m1) ++ (assocs m2))
 
-instance SemiGroup.SemiGroup ObstructionMap where
+instance Semigroup.Semigroup ObstructionMap where
   (<>) (ObstructionMap m1) (ObstructionMap m2) = ObstructionMap $ accumArray (<>) mempty (bounds m1) ((assocs m1) ++ (assocs m2))
 
 
@@ -102,8 +103,17 @@ runFOV fromPos mapBounds tcodMap = VisibleMap $ unsafePerformIO $ do
   visible' <- Unsafe.unsafeFreeze visible
   return visible'
 
+noLightMap :: (CoordIndex, CoordIndex) -> LightMap
+noLightMap mapBounds = LightMap $ accumArray (\x -> \_ -> x) mempty mapBounds []
 
-
+mkLightMap :: [Entity] -> (CoordIndex, CoordIndex) -> TCOD.TCODMap -> LightMap
+mkLightMap sources mapBounds tcodMap = Semigroup.sconcat $
+    NonEmpty.fromList ([noLightMap mapBounds] <> map calcLight sources)
+  where
+  calcLight source = let  pos = (source ^. position)
+                          light = fromJust (source ^. lightSource)
+                          visibleMap = runFOV pos mapBounds tcodMap in
+                            mkLightMapFromEntitySource pos light visibleMap
 
 {- NOINLINE mkLightMapFromEntitySource -}
 mkLightMapFromEntitySource :: Coord -> LightSource -> VisibleMap -> LightMap

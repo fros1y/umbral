@@ -15,6 +15,7 @@ import           Control.Lens
 import Control.Category
 import Data.Default
 import Data.Array
+import Data.Maybe
 
 import qualified Color as Color
 import Coord
@@ -22,6 +23,7 @@ import Symbol
 import GameState
 import Entity
 import GameMap
+import Lighting
 
 data DisplayContext = DisplayContext {
   _wnd   :: SFML.RenderWindow,
@@ -117,10 +119,21 @@ render display state visibleMap = let ?context = display in do
     centerViewOn (state ^. playerPosition)
     let visible e = ((unpackVisibleMap visibleMap) <!> (e ^. position)) || (isPlayerEntity e)
         visibleEntities = filter visible (levelEntities (state ^. currLevel))
-    mapM_ putEntity $ visibleEntities
+        litEntities = lightEntities visibleEntities (state ^. currLevel)
+    mapM_ putEntity $ litEntities
     SFML.display (display ^. wnd)
 
------
+lightEntities :: [Entity] -> LevelState -> [Entity]
+lightEntities entities lstate = mapMaybe lightEntity entities where
+  cache = lstate ^. (cachedMap . unsafeFromJust)
+  lightingMap = unpackLightMap $ cache ^. lightMap
+  lightEntity e = if aboveThreshold 0.25 ll
+                  then Just $ e & (symbol . baseColor) %~ (apparentColor ll)
+                  else Nothing
+              where
+                ll = lightingMap <!> (e ^. position)
+
+    -----
 data PlayerCommand  = Go Direction
                     | Pass
                     | Save

@@ -59,7 +59,7 @@ buildCachedMap levelState = CachedMap entityMap obstructionMap tcodMap lightMap 
   entityMap = mkEntityMap levelBounds (levelEntities levelState)
   obstructionMap = mkObstructionMap entityMap
   tcodMap = mkTCODMap obstructionMap
-  lightMap = undefined
+  lightMap = mkLightMap (levelLightSources levelState) (boundsToPair levelBounds) tcodMap
 
 mkNewEntityRef :: GameState -> (EntityRef, GameState)
 mkNewEntityRef state = (state ^. nextEntityRef, state & nextEntityRef +~ 1)
@@ -94,3 +94,6 @@ playerPosition = player . position
 
 levelEntities :: LevelState -> [Entity]
 levelEntities level = IntMap.elems (level ^. gameEntities)
+
+levelLightSources :: LevelState -> [Entity]
+levelLightSources level = filter isLightSource $ levelEntities level

@@ -17,23 +17,28 @@ fromTuple (r, g, b) = Color r' g' b' where
     g' = fromIntegral g
     b' = fromIntegral b
 
-clampC :: Color -> Color
-clampC (Color r g b) = Color (restrict r) (restrict g) (restrict b) where
-    restrict = clamp 0 255
+normalize :: Color -> Color
+normalize (Color r g b) = Color (normalize' r) (normalize' g) (normalize' b) where
+    dominateComponent = fromIntegral $ maximum [r, g, b]
+    normalize' c = round (255 * ((fromIntegral c) / dominateComponent))
 
 instance Num Color where
-    (Color r1 g1 b1) + (Color r2 g2 b2) = clampC $ Color (r1+r2) (g1+g2) (b1+b2)
-    (Color r1 g1 b1) - (Color r2 g2 b2) = clampC $ Color (r1-r2) (g1-g2) (b1-b2)
-    (Color r1 g1 b1) * (Color r2 g2 b2) = clampC $ Color (r1*r2) (g1*g2) (b1*b2)
+    (Color r1 g1 b1) + (Color r2 g2 b2) = normalize $ Color (r1+r2) (g1+g2) (b1+b2)
+    (Color r1 g1 b1) - (Color r2 g2 b2) = normalize $ Color (r1-r2) (g1-g2) (b1-b2)
+    (Color r1 g1 b1) * (Color r2 g2 b2) = normalize $ Color (r1*r2) (g1*g2) (b1*b2)
     negate (Color r g b) = Color (-r) (-g) (-b)
     abs (Color r g b)  = Color (abs r) (abs g) (abs b)
     signum (Color r g b) = Color (signum r) (signum g) (signum b)
-    fromInteger i = clampC $ Color i' i' i' where
+    fromInteger i = normalize $ Color i' i' i' where
         i' = fromIntegral i
 
 instance Monoid Color where
     mempty = byName "black"
     mappend c1 c2 = c1 + c2
+
+scale :: Double -> Color -> Color
+scale factor (Color r g b) = Color (scale' r) (scale' g) (scale' b) where
+    scale' x = round $ (*) factor (fromIntegral x)
 
 byName :: String -> Color
 byName "alice blue" = fromTuple (240,248,255)
