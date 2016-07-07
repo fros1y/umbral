@@ -137,7 +137,7 @@ mkPlayer :: Coord -> Entity
 mkPlayer coord =
     baseEntity  & health .~ Just (mkHealth 100)
                 & actor .~ Just (mkActor Player)
-                & lightSource .~ Just (LightSource 5 (Color.byName "yellow"))
+                & lightSource .~ Just (LightSource 5 (Color.byName "light yellow"))
   where
     baseEntity = mkBaseEntity coord sym
     sym = def & glyph .~ '@'
@@ -173,4 +173,4 @@ addLight :: LightSource -> Entity -> Entity
 addLight light e = e & lightSource .~ Just light
 
 mkLitColumn :: Coord -> Entity
-mkLitColumn coord = addLight (LightSource 1 $ Color.byName "blue") (mkWall coord)
+mkLitColumn coord = addLight (LightSource 1 $ Color.byName "steel blue") (mkWall coord)
