@@ -28,7 +28,7 @@ library
                       , GameM
                       , AIStrategies
                       , Serialize
-                      , Level
+                      , LevelBuilder
                       , Utils
                       , GameMap
                       , TCOD

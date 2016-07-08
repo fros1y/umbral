@@ -4,7 +4,7 @@ import Prelude hiding (Either(..), id, (.))
 
 import Game
 import UI
-import Level
+import LevelBuilder
 import GameState
 
 gameState :: GameState

@@ -1,4 +1,4 @@
-module Level where
+module LevelBuilder where
 
 import Control.Category
 import Control.Lens
