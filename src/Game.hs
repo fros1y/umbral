@@ -46,16 +46,6 @@ data GameCommand
     | C_Load
     deriving (Eq,Generic,Show)
 
-saveGame :: GameState -> IO ()
-saveGame state = do
-    let filename = "out.umbral"
-    writeFile filename <<< show $ Aeson.encode state
-
-loadGame :: IO (Maybe GameState)
-loadGame = do
-    let filename = "out.umbral"
-    fileContents <- readFile filename
-    return $ Aeson.decode (read fileContents)
 
 gameLoop :: DisplayContext -> GameState -> IO ()
 gameLoop display gameState = do

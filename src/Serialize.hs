@@ -6,12 +6,27 @@ module Serialize where
 
 import Data.Aeson
 import Data.Dequeue
+import Prelude hiding (Either(..), id, (.))
+import Control.Category
+
 import Coord
 import Entity
 import Symbol
 import GameState
 import Lighting
 import qualified Color as Color
+
+
+saveGame :: GameState -> IO ()
+saveGame state = do
+    let filename = "out.umbral"
+    writeFile filename <<< show $ encode state
+
+loadGame :: IO (Maybe GameState)
+loadGame = do
+    let filename = "out.umbral"
+    fileContents <- readFile filename
+    return $  decode (read fileContents)
 
 instance ToJSON Coord
 
