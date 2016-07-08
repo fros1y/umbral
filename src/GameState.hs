@@ -10,7 +10,7 @@ import Control.Lens
 import qualified Data.IntMap.Strict as IntMap
 import Data.Default
 import qualified Data.Dequeue as DQ
-import Data.Maybe (isJust)
+import Data.Maybe (isJust, isNothing)
 import Coord
 import Entity
 import ActorQueue
@@ -50,8 +50,9 @@ mkGameState playerStart =
     queue = DQ.fromList [1]
 
 buildMaps :: LevelState -> LevelState
-buildMaps level = level {_cachedMap = Just cachedMap'} where
-  cachedMap' = buildCachedMap level
+buildMaps level = if isNothing (level ^. cachedMap)
+                  then level {_cachedMap = Just (buildCachedMap level)}
+                  else level
 
 buildCachedMap :: LevelState -> CachedMap
 buildCachedMap levelState = CachedMap entityMap obstructionMap tcodMap lightMap where

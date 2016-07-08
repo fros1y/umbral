@@ -55,6 +55,7 @@ applyEffectsToEntities effects = do
                 (getMap effects)
                 (gameState ^. (currLevel . gameEntities))
         gameState' = gameState & (currLevel . gameEntities) .~ gameEntities'
+                               & (currLevel . cachedMap) .~ Nothing
     return $ gameState'
 
 applyEffects :: EntityRef -> [Effect] -> Entity -> Maybe Entity
