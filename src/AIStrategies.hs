@@ -24,36 +24,36 @@ import Actions
 import ActorQueue
 import Effects
 import Entity
-import GameM
+import GameEngine
 import GameState
 import Symbol
 import UI
 import Utils
 
-type Proposer = GameM [Action]
+type Proposer = GameEngine [Action]
 
-type Chooser = [Action] -> GameM (Maybe Action)
+type Chooser = [Action] -> GameEngine (Maybe Action)
 
-runEntity :: Entity -> GameM ActionsByEntity
+runEntity :: Entity -> GameEngine ActionsByEntity
 runEntity entity =
     case entityStrategy entity of
         Nothing -> return $ returnActionsFor entity []
         Just Random -> runRandom entity
         Just Zombie -> runZombie entity
 
-runRandom :: Entity -> GameM ActionsByEntity
+runRandom :: Entity -> GameEngine ActionsByEntity
 runRandom entity = runEntity' propose choose entity
   where
     propose = attacksBy entity +++ allMovesBy entity
     choose = pickRandomAction
 
-runZombie :: Entity -> GameM ActionsByEntity
+runZombie :: Entity -> GameEngine ActionsByEntity
 runZombie entity = runEntity' propose choose entity
   where
     propose = attacksBy entity +++ dumbMovesTowardPlayer entity
     choose = return <<< listToMaybe
 
-runEntity' :: Proposer -> Chooser -> Entity -> GameM ActionsByEntity
+runEntity' :: Proposer -> Chooser -> Entity -> GameEngine ActionsByEntity
 runEntity' propose choose entity = do
     possibleActions <- propose
     chosenAct <- choose possibleActions
@@ -64,18 +64,18 @@ runEntity' propose choose entity = do
                  Nothing -> [ActWait]
                  (Just m) -> [m])
 
-attacksAt :: Coord -> GameM [Action]
+attacksAt :: Coord -> GameEngine [Action]
 attacksAt coord = do
     attackables <- attackablesAt coord
     return $ fmap (ActAttack <<< _entityRef) attackables
 
-dumbMovesTowardPlayer :: Entity -> GameM [Action]
+dumbMovesTowardPlayer :: Entity -> GameEngine [Action]
 dumbMovesTowardPlayer entity = do
     towardsPlayer <- liftA splitCoordDelta $ getDeltaTowardsPlayer entity
     validMoves <- filterM (entityCanMoveBy entity) towardsPlayer
     return $ fmap ActMoveBy validMoves
 
-allMovesBy :: Entity -> GameM [Action]
+allMovesBy :: Entity -> GameEngine [Action]
 allMovesBy entity = do
     validMoves <-
         filterM
@@ -92,7 +92,7 @@ pickRandomAction actions = do
     randomActions <- Random.shuffleM actions
     return $ listToMaybe randomActions
 
-attacksBy :: Entity -> GameM [Action]
+attacksBy :: Entity -> GameEngine [Action]
 attacksBy entity = do
     let coords =
             fmap

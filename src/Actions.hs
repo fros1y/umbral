@@ -15,7 +15,7 @@ import Coord
 import Effects
 import Entity
 import Entity
-import GameM
+import GameEngine
 import GameState
 
 data Action
@@ -34,14 +34,14 @@ returnActionsFor entity actions = (entity ^. entityRef, actions)
 
 -----
 validateActions
-    :: ActionsByEntity -> GameM [Action]
+    :: ActionsByEntity -> GameEngine [Action]
 validateActions (ref,actions) = do
     e <- getEntity ref
     case e of
         Nothing -> return [] -- a non-existent entity can do nothing
         (Just e') -> filterM (validActionBy e') actions
 
-applyActions :: ActionsByEntity -> GameM EffectsToEntities
+applyActions :: ActionsByEntity -> GameEngine EffectsToEntities
 applyActions (_,[]) = return mempty
 applyActions actionsByEntity@(ref,actions) = do
     validActions <- validateActions actionsByEntity
@@ -54,12 +54,12 @@ applyActions actionsByEntity@(ref,actions) = do
 
 -----
 validActionBy
-    :: Entity -> Action -> GameM Bool
+    :: Entity -> Action -> GameEngine Bool
 validActionBy e (ActMoveBy delta) = traversableAt $ (e ^. position) + delta
 validActionBy e (ActAttack ref) = isAttackableRef ref
 validActionBy _ _ = return True
 
-applyAction :: EntityRef -> Action -> GameM EffectsToEntities
+applyAction :: EntityRef -> Action -> GameEngine EffectsToEntities
 applyAction ref ActWait = return $ returnEffectsForRef ref [EffPass]
 applyAction ref (ActAttack aref) =
     return $ returnEffectsForRef aref [EffDamaged 1]

@@ -30,7 +30,7 @@ import AIStrategies
 import Coord
 import Effects
 import Entity
-import GameM
+import GameEngine
 import GameState
 import Serialize
 import Symbol
@@ -66,7 +66,7 @@ gameLoop display gameState = do
         Just C_Quit -> return ()
 
 
-gameStepM :: DisplayContext -> GameM (GameState, Maybe GameCommand)
+gameStepM :: DisplayContext -> GameEngine (GameState, Maybe GameCommand)
 gameStepM display = do
     state <- ask
     let playerVis = mkVisibleMap (state ^. player) (fromJust (state ^. (currLevel . cachedMap)))
@@ -78,7 +78,7 @@ gameStepM display = do
             state' <- rotateAndStep entityToRun
             return (state', Nothing)
 
-entityStepM :: DisplayContext -> Entity -> GameM (GameState, Maybe GameCommand)
+entityStepM :: DisplayContext -> Entity -> GameEngine (GameState, Maybe GameCommand)
 entityStepM display entityToRun = do
     state <- ask
     (actions,command) <-
@@ -94,7 +94,7 @@ entityStepM display entityToRun = do
             state' <- applyEffectsToEntities (traceMsg "effects: " effects) -- return mutated gameState
             return (state', command)
 
-rotateAndStep :: Maybe Entity -> GameM GameState
+rotateAndStep :: Maybe Entity -> GameEngine GameState
 rotateAndStep e = do
     case e of
         Nothing       -- this happens if an entity has been destroyed (died)
@@ -106,7 +106,7 @@ rotateAndStep e = do
             gameState' <- applyEffectsToEntities recover
             return $ gameState' & actorQueue %~ rotate
 
-firstInQueue :: GameM (Maybe Entity)
+firstInQueue :: GameEngine (Maybe Entity)
 firstInQueue = do
     state <- ask
     let ref = (DQ.first (state ^. actorQueue)) :: Maybe EntityRef
@@ -114,14 +114,14 @@ firstInQueue = do
         Nothing -> return Nothing
         Just r -> getEntity r
 
-isAttack :: Coord -> GameM (Maybe EntityRef)
+isAttack :: Coord -> GameEngine (Maybe EntityRef)
 isAttack coord = do
     attackables <- attackablesAt coord
     return $ _entityRef <$> listToMaybe attackables
 
 getPlayerActions :: DisplayContext
                  -> Entity
-                 -> GameM (ActionsByEntity, Maybe GameCommand)
+                 -> GameEngine (ActionsByEntity, Maybe GameCommand)
 getPlayerActions display player = do
     let playerActs = returnActionsFor player
     input <- liftIO $ getPlayerCommand display

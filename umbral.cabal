@@ -25,7 +25,7 @@ library
                       , ActorQueue
                       , Effects
                       , UI
-                      , GameM
+                      , GameEngine
                       , AIStrategies
                       , Serialize
                       , LevelBuilder

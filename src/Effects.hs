@@ -11,7 +11,7 @@ import GHC.Generics
 import Prelude hiding (Either(..), id, (.))
 import Coord
 import Entity
-import GameM
+import GameEngine
 import GameState
 
 data Effect
@@ -44,7 +44,7 @@ returnEffectsForRef entityref effects =
 
 -----
 applyEffectsToEntities
-    :: EffectsToEntities -> GameM GameState
+    :: EffectsToEntities -> GameEngine GameState
 applyEffectsToEntities effects = do
     gameState <- ask
     let gameEntities' =
