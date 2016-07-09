@@ -85,5 +85,16 @@ instance FromJSON LevelState where
 instance ToJSON LightSource
 instance FromJSON LightSource
 
-instance ToJSON GameState
-instance FromJSON GameState
+instance ToJSON GameState where
+    toJSON GameState{..} = object [
+        "currLevel" .= _currLevel,
+        "actorQueue" .= _actorQueue,
+        "nextEntityRef" .= _nextEntityRef]
+
+instance FromJSON GameState where
+    parseJSON = withObject "gamestate" $ \o -> do
+        _currLevel <- o .: "currLevel"
+        _actorQueue <- o .: "actorQueue"
+        _nextEntityRef <- o .: "nextEntityRef"
+        _displayContext <- return Nothing
+        return GameState {..}

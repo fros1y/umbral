@@ -20,7 +20,6 @@ import Data.Maybe
 import qualified Color as Color
 import Coord
 import Symbol
-import GameState
 import Entity
 import GameMap
 import Lighting
@@ -31,6 +30,9 @@ data DisplayContext = DisplayContext {
   _clock :: SFML.Clock
 }
 makeLenses ''DisplayContext
+
+instance Show DisplayContext where
+  show _ = "<displayContext>"
 
 initDisplay :: IO DisplayContext
 initDisplay = do
@@ -113,26 +115,6 @@ centerViewOn coord = do
   SFML.setView (?context ^. wnd) view
   return ()
 
-render :: DisplayContext -> GameState -> VisibleMap -> IO ()
-render display state visibleMap = let ?context = display in do
-    SFML.clearRenderWindow (display ^. wnd) $ SFML.Color 0 0 0 255
-    centerViewOn (state ^. playerPosition)
-    let visible e = ((unpackVisibleMap visibleMap) <!> (e ^. position)) || (isPlayerEntity e)
-        visibleEntities = filter visible (levelEntities (state ^. currLevel))
-        litEntities = lightEntities visibleEntities (state ^. currLevel)
-    mapM_ putEntity $ litEntities
-    SFML.display (display ^. wnd)
-
-lightEntities :: [Entity] -> LevelState -> [Entity]
-lightEntities entities lstate = mapMaybe lightEntity entities where
-  cache = lstate ^. (cachedMap . unsafeFromJust)
-  lightingMap = unpackLightMap $ cache ^. lightMap
-  lightEntity e = if aboveThreshold 0.25 ll
-                  then Just $ e & (symbol . baseColor) %~ (apparentColor ll)
-                  else Nothing
-              where
-                ll = lightingMap <!> (e ^. position)
-
     -----
 data PlayerCommand  = Go Direction
                     | Pass
@@ -167,3 +149,6 @@ playerCommandFromKey SFML.SFEvtKeyPressed {SFML.code = keyCode,
                                         (SFML.KeyS, False) -> Just Save
                                         (SFML.KeyL, False) -> Just Load
                                         _ -> Nothing
+
+clearWindow display = SFML.clearRenderWindow (display ^. wnd) $ SFML.Color 0 0 0 255
+drawDisplay display = SFML.display (display ^. wnd)

@@ -73,6 +73,6 @@ mkEntityFrom (coord,Floor) = mkFloor coord
 mkEntityFrom (coord,LitColumn) = mkLitColumn coord
 
 mkLevel :: GameState
-mkLevel = mergeLevelBuilder level $ mkGameState (Coord 15 10)
+mkLevel = mergeLevelBuilder level $ mkGameState Nothing (Coord 15 10)
   where
     level = mkRoom (Bounds (Coord 0 0) (Coord 30 20)) <> mkTiles LitColumn [Coord 5 5, Coord 11 9]

@@ -47,40 +47,42 @@ data GameCommand
     deriving (Eq,Generic,Show)
 
 
-gameLoop :: DisplayContext -> GameState -> IO ()
-gameLoop display gameState = do
+gameLoop :: GameState -> IO ()
+gameLoop gameState = do
     (state',gameCommand) <-
-        Reader.runReaderT (runGame (gameStepM display)) (gameState & currLevel %~ buildMaps)
+        Reader.runReaderT (runGame gameStepM) (gameState & currLevel %~ buildMaps)
     case gameCommand of
-        Nothing -> gameLoop display state'
-        Just C_NOP -> gameLoop display state'
+        Nothing -> gameLoop state'
+        Just C_NOP -> gameLoop state'
         Just C_Save -> do
             saveGame state'
-            gameLoop display state'
+            gameLoop state'
         Just C_Load -> do
             loadState <- loadGame
             case loadState of
                 Nothing ->
-                    traceMsgM "Error loading game." $ gameLoop display state'
-                (Just loadState') -> gameLoop display loadState'
+                    traceMsgM "Error loading game." $ gameLoop state'
+                (Just loadState') -> gameLoop loadState'
         Just C_Quit -> return ()
 
 
-gameStepM :: DisplayContext -> GameEngine (GameState, Maybe GameCommand)
-gameStepM display = do
+gameStepM :: GameEngine (GameState, Maybe GameCommand)
+gameStepM = do
     state <- ask
-    let playerVis = mkVisibleMap (state ^. player) (fromJust (state ^. (currLevel . cachedMap)))
+    let display = state ^. (displayContext . unsafeFromJust)
+        playerVis = mkVisibleMap (state ^. player) (fromJust (state ^. (currLevel . cachedMap)))
     liftIO $ render display state playerVis
     entityToRun <- firstInQueue
     if stillActive entityToRun
-        then entityStepM display (fromJust entityToRun)
+        then entityStepM (fromJust entityToRun)
         else do
             state' <- rotateAndStep entityToRun
             return (state', Nothing)
 
-entityStepM :: DisplayContext -> Entity -> GameEngine (GameState, Maybe GameCommand)
-entityStepM display entityToRun = do
+entityStepM :: Entity -> GameEngine (GameState, Maybe GameCommand)
+entityStepM entityToRun = do
     state <- ask
+    let display = state ^. (displayContext . unsafeFromJust)
     (actions,command) <-
         if isPlayerEntity entityToRun
             then getPlayerActions display entityToRun

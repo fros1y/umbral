@@ -15,7 +15,7 @@ import Coord
 import Entity
 import ActorQueue
 import GameMap
-
+import UI
 
 data LevelState = LevelState {
     _gameEntities :: IntMap.IntMap Entity
@@ -29,16 +29,18 @@ data GameState = GameState
     {  _currLevel :: LevelState
     , _actorQueue :: ActorQueue
     , _nextEntityRef :: Int
+    , _displayContext :: Maybe DisplayContext
     } deriving (Show,Generic)
 
 makeLenses ''GameState
 
-mkGameState :: Coord -> GameState
-mkGameState playerStart =
+mkGameState :: Maybe DisplayContext -> Coord -> GameState
+mkGameState context playerStart =
     GameState
     { _currLevel = level
     , _actorQueue = queue
     , _nextEntityRef = 2
+    , _displayContext = context
     }
   where
     level = LevelState {  _gameEntities = entities
@@ -82,7 +84,7 @@ addEntitiesToCurrLevel :: [Entity] -> GameState -> GameState
 addEntitiesToCurrLevel ents gameState = Prelude.foldr addEntityToCurrLevel gameState ents
 
 instance Default GameState where
-    def = mkGameState (Coord 1 1)
+    def = mkGameState Nothing (Coord 1 1)
 
 unsafeFromJust :: Lens' (Maybe a) a
 unsafeFromJust = anon (error "unsafeFromJust: Nothing") (const False)
