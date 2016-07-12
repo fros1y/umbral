@@ -1,6 +1,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE ImplicitParams #-}
+{-# LANGUAGE GADTs #-}
 
 module GameEngine where
 
@@ -12,6 +13,7 @@ import qualified Control.Monad.State as State
 import qualified Data.IntMap.Strict as IntMap
 import Data.Maybe (fromJust, mapMaybe)
 
+import Control.Monad.Operational
 
 import Prelude hiding (Either(..), id, (.))
 import Coord
@@ -21,8 +23,7 @@ import GameMap
 import UI
 import Lighting
 import Symbol
-
-
+    
 newtype GameEngine a = GameEngine
     { runGame :: (Reader.ReaderT GameState IO) a
     } deriving (Functor,Applicative,Random.MonadRandom,Monad,MonadReader GameState,State.MonadIO)

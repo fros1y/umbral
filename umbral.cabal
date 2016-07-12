@@ -52,7 +52,8 @@ library
                       aeson,
                       random-shuffle,
                       array,
-                      semigroups
+                      semigroups,
+                      operational
 
   default-language:    Haskell2010
   extra-libraries:     tcod
